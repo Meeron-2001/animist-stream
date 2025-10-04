@@ -4,6 +4,9 @@ import styled from "styled-components";
 import { Toaster } from "react-hot-toast";
 import Nav from "./components/Navigation/Nav";
 import LoadingScreen from "./components/Loading/LoadingScreen";
+import GlobalStyle from "./styles/globalStyles";
+import Footer from "./components/Footer/Footer";
+
 const Home = lazy(() => import("./pages/Home"));
 const AnimeDetails = lazy(() => import("./pages/AnimeDetails"));
 const FavouriteAnime = lazy(() => import("./pages/FavouriteAnime"));
@@ -15,8 +18,6 @@ const Top100Anime = lazy(() => import("./pages/Top100Anime"));
 const TrendingAnime = lazy(() => import("./pages/TrendingAnime"));
 const WatchAnime = lazy(() => import("./pages/WatchAnime"));
 const WatchAnimeV2 = lazy(() => import("./pages/WatchAnimeV2"));
-import GlobalStyle from "./styles/globalStyles";
-import Footer from "./components/Footer/Footer";
 
 function AppContainer() {
   const location = useLocation();
