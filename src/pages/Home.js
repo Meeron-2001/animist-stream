@@ -36,7 +36,7 @@ function Home() {
         },
       },
     }).catch((err) => {
-      console.log(err);
+      console.error(err);
     });
     setImages(result.data.data.Page.media);
     setLoading(false);

@@ -33,10 +33,9 @@ function PopularAnime() {
         },
       },
     }).catch((err) => {
-      console.log(err);
+      console.error(err);
     });
     setLoading(false);
-    console.log(res.data.data.Page.media);
     setAnimeDetails(res.data.data.Page.media);
     document.title = "Popular Anime - Animist";
   }

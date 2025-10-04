@@ -32,7 +32,7 @@ function SearchResults() {
         },
       },
     }).catch((err) => {
-      console.log(err);
+      console.error(err);
     });
     setLoading(false);
     setResults(res.data.data.Page.media);

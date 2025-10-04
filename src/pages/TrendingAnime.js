@@ -33,7 +33,7 @@ function TrendingAnime() {
         },
       },
     }).catch((err) => {
-      console.log(err);
+      console.error(err);
     });
     setLoading(false);
     setAnimeDetails(res.data.data.Page.media);
