@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import styled from "styled-components";
 import Carousel from "../components/Home/Carousel";
@@ -13,13 +13,9 @@ import Loading from "../components/Loading/Loading";
 function Home() {
   const [images, setImages] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { height, width } = useWindowDimensions();
+  const { width } = useWindowDimensions();
 
-  useEffect(() => {
-    getImages();
-  }, []);
-
-  async function getImages() {
+  const getImages = useCallback(async () => {
     window.scrollTo(0, 0);
     let result = await axios({
       url: process.env.REACT_APP_BASE_URL,
@@ -41,7 +37,11 @@ function Home() {
     setImages(result.data.data.Page.media);
     setLoading(false);
     document.title = "Animist - Watch Anime Free Online With English Sub and Dub";
-  }
+  }, []);
+
+  useEffect(() => {
+    getImages();
+  }, [getImages]);
 
   function checkSize() {
     let lsData = localStorage.getItem("Watching");

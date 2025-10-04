@@ -1,5 +1,5 @@
 import axios from "axios";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { Link, useParams } from "react-router-dom";
 import styled from "styled-components";
 import SearchResultsSkeleton from "../components/skeletons/SearchResultsSkeleton";
@@ -11,11 +11,7 @@ function PopularAnime() {
   const [animeDetails, setAnimeDetails] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    getAnime();
-  }, [page]);
-
-  async function getAnime() {
+  const getAnime = useCallback(async () => {
     setLoading(true);
     window.scrollTo(0, 0);
     const res = await axios({
@@ -38,7 +34,11 @@ function PopularAnime() {
     setLoading(false);
     setAnimeDetails(res.data.data.Page.media);
     document.title = "Popular Anime - Animist";
-  }
+  }, [page]);
+
+  useEffect(() => {
+    getAnime();
+  }, [getAnime]);
   return (
     <div>
       {loading && (

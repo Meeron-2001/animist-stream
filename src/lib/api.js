@@ -13,7 +13,7 @@ try {
 export const API_BASE =
   process.env.REACT_APP_BACKEND_URL || viteBase || "https://api-consumet-org-8.onrender.com";
 
-if (typeof window !== "undefined") {
+if (typeof window !== "undefined" && process.env.NODE_ENV !== "production") {
   // Confirm connection in dev console
   // eslint-disable-next-line no-console
   console.log("✅ Connected to custom backend:", API_BASE);

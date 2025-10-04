@@ -1,6 +1,6 @@
 import axios from "axios";
 import { api } from "../lib/api";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import styled from "styled-components";
 import AnimeDetailsSkeleton from "../components/skeletons/AnimeDetailsSkeleton";
@@ -19,15 +19,7 @@ function MalAnimeDetails() {
   const [dub, setDub] = useState(false);
   const [notAvailable, setNotAvailable] = useState(false);
 
-  useEffect(() => {
-    getInfo();
-  }, []);
-
-  function readMoreHandler() {
-    setExpanded(!expanded);
-  }
-
-  async function getInfo() {
+  const getInfo = useCallback(async () => {
     if (id === "null") {
       setNotAvailable(true);
       return;
@@ -46,7 +38,7 @@ function MalAnimeDetails() {
         },
       },
     }).catch((err) => {
-      console.log(err);
+      console.error(err);
     });
     setAnilistResponse(aniRes.data.data.Media);
     let malRes = await api
@@ -59,7 +51,16 @@ function MalAnimeDetails() {
     if (aniRes?.data?.data?.Media?.title?.userPreferred) {
       document.title = `${aniRes.data.data.Media.title.userPreferred} - Animist`;
     }
+  }, [id]);
+
+  useEffect(() => {
+    getInfo();
+  }, [getInfo]);
+
+  function readMoreHandler() {
+    setExpanded(!expanded);
   }
+
 
   return (
     <div>

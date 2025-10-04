@@ -23,39 +23,7 @@ function WatchAnime() {
   const [internalPlayer, setInternalPlayer] = useState(true);
   const [localStorageDetails, setLocalStorageDetails] = useState(0);
 
-  const getEpisodeLinks = useCallback(async () => {
-    setLoading(true);
-    window.scrollTo(0, 0);
-    let res = await api.get(`/api/getlinks?link=/${episodeSlug}`);
-    setLoading(false);
-    setEpisodeLinks(res.data);
-    setCurrentServer(res.data[0].vidstreaming);
-    if (
-      res.data[0].sources.sources !== null ||
-      res.data[0].sources.sources !== undefined
-    ) {
-      setInternalPlayer(true);
-    }
-    updateLocalStorage(episodeSlug, res.data);
-    getLocalStorage(
-      res.data[0].titleName.substring(
-        0,
-        res.data[0].titleName.indexOf("Episode")
-      )
-    );
-    document.title = `${res.data[0].titleName
-      .substring(res.data[0].titleName.indexOf("Episode"))
-      .replace("Episode", "EP")} - ${res.data[0].titleName.substring(
-      0,
-      res.data[0].titleName.indexOf("Episode")
-    )} - Animist`;
-  }, [episodeSlug]);
-
-  useEffect(() => {
-    getEpisodeLinks();
-  }, [getEpisodeLinks]);
-
-  function getLocalStorage(animeDetails) {
+  const getLocalStorage = useCallback(function getLocalStorage(animeDetails) {
     animeDetails = animeDetails.substring(0, animeDetails.length - 1);
 
     if (localStorage.getItem("Animes")) {
@@ -68,21 +36,9 @@ function WatchAnime() {
         setLocalStorageDetails(lsData.Names[index].currentEpisode);
       }
     }
-  }
+  }, []);
 
-  function fullScreenHandler(e) {
-    setFullScreen(!fullScreen);
-    let video = document.getElementById("video");
-
-    if (!document.fullscreenElement) {
-      video.requestFullscreen();
-      window.screen.orientation.lock("landscape-primary");
-    } else {
-      document.exitFullscreen();
-    }
-  }
-
-  function updateLocalStorage(episode, episodeLinks) {
+  const updateLocalStorage = useCallback(function updateLocalStorageFn(episode, episodeLinks) {
     let episodeNum = episode.replace(/.*?(\d+)[^\d]*$/, "$1");
     let animeName = episodeLinks[0].titleName.substring(
       0,
@@ -122,7 +78,55 @@ function WatchAnime() {
       data = JSON.stringify(data);
       localStorage.setItem("Animes", data);
     }
+  }, [episodeSlug]);
+
+  const getEpisodeLinks = useCallback(async () => {
+    setLoading(true);
+    window.scrollTo(0, 0);
+    let res = await api.get(`/api/getlinks?link=/${episodeSlug}`);
+    setLoading(false);
+    setEpisodeLinks(res.data);
+    setCurrentServer(res.data[0].vidstreaming);
+    if (
+      res.data[0].sources.sources !== null ||
+      res.data[0].sources.sources !== undefined
+    ) {
+      setInternalPlayer(true);
+    }
+    updateLocalStorage(episodeSlug, res.data);
+    getLocalStorage(
+      res.data[0].titleName.substring(
+        0,
+        res.data[0].titleName.indexOf("Episode")
+      )
+    );
+    document.title = `${res.data[0].titleName
+      .substring(res.data[0].titleName.indexOf("Episode"))
+      .replace("Episode", "EP")} - ${res.data[0].titleName.substring(
+      0,
+      res.data[0].titleName.indexOf("Episode")
+    )} - Animist`;
+  }, [episodeSlug, updateLocalStorage, getLocalStorage]);
+
+  useEffect(() => {
+    getEpisodeLinks();
+  }, [getEpisodeLinks]);
+
+  
+
+  function fullScreenHandler(e) {
+    setFullScreen(!fullScreen);
+    let video = document.getElementById("video");
+
+    if (!document.fullscreenElement) {
+      video.requestFullscreen();
+      window.screen.orientation.lock("landscape-primary");
+    } else {
+      document.exitFullscreen();
+    }
   }
+
+  
 
   return (
     <div>

@@ -1,6 +1,6 @@
 import axios from "axios";
 import { api } from "../lib/api";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import styled from "styled-components";
 import AnimeDetailsSkeleton from "../components/skeletons/AnimeDetailsSkeleton";
@@ -12,14 +12,10 @@ function AnimeDetails() {
   const [animeDetails, setAnimeDetails] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState(false);
-  const { height, width } = useWindowDimensions();
+  const { width } = useWindowDimensions();
   const [localStorageDetails, setLocalStorageDetails] = useState(0);
 
-  useEffect(() => {
-    getAnimeDetails();
-  }, []);
-
-  async function getAnimeDetails() {
+  const getAnimeDetails = useCallback(async () => {
     setLoading(true);
     setExpanded(false);
     window.scrollTo(0, 0);
@@ -28,7 +24,11 @@ function AnimeDetails() {
     setAnimeDetails(res.data);
     getLocalStorage(res.data);
     document.title = res.data[0].gogoResponse.title + " - Animist"
-  }
+  }, [slug]);
+
+  useEffect(() => {
+    getAnimeDetails();
+  }, [getAnimeDetails]);
 
   function readMoreHandler() {
     setExpanded(!expanded);

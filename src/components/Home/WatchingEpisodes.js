@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import axios from "axios";
 import { Link } from "react-router-dom";
 import styled from "styled-components";
@@ -19,11 +19,7 @@ function WatchingEpisodes() {
   const [loading, setLoading] = useState(true);
   const [change, setChange] = useState(false);
 
-  useEffect(() => {
-    getAnimeData();
-  }, []);
-
-  async function getAnimeData() {
+  const getAnimeData = useCallback(async () => {
     setLoading(true);
     let data = localStorage.getItem("Watching");
     data = JSON.parse(data);
@@ -46,7 +42,7 @@ function WatchingEpisodes() {
         },
       },
     }).catch((err) => {
-      console.log(err);
+      console.error(err);
     });
     let output = [];
     for (let i = 0; i < data.length; i++) {
@@ -61,7 +57,11 @@ function WatchingEpisodes() {
     }
     setData(output);
     setLoading(false);
-  }
+  }, []);
+
+  useEffect(() => {
+    getAnimeData();
+  }, [getAnimeData]);
 
   function removeAnime(index) {
     let lsData = localStorage.getItem("Watching");

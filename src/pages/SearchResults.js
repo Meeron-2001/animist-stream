@@ -1,5 +1,5 @@
 import axios from "axios";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import styled from "styled-components";
 import SearchResultsSkeleton from "../components/skeletons/SearchResultsSkeleton";
@@ -11,11 +11,7 @@ function SearchResults() {
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    getResults();
-  }, [urlParams]);
-
-  async function getResults() {
+  const getResults = useCallback(async () => {
     setLoading(true);
     window.scrollTo(0, 0);
     let res = await axios({
@@ -37,7 +33,11 @@ function SearchResults() {
     setLoading(false);
     setResults(res.data.data.Page.media);
     document.title = urlParams + " - Animist";
-  }
+  }, [urlParams]);
+
+  useEffect(() => {
+    getResults();
+  }, [getResults]);
   return (
     <div>
       {loading && (
