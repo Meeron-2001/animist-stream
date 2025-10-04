@@ -1,17 +1,8 @@
 import axios from "axios";
 
-// Resolve API base from CRA or optional Vite config (fallback to provided URL)
-let viteBase;
-try {
-  // Safe access in CRA builds; will be undefined there
-  // eslint-disable-next-line no-undef
-  viteBase = import.meta?.env?.VITE_API_BASE;
-} catch (e) {
-  viteBase = undefined;
-}
-
+// Resolve API base from CRA environment variables
 export const API_BASE =
-  process.env.REACT_APP_BACKEND_URL || viteBase || "https://api-consumet-org-8.onrender.com";
+  process.env.REACT_APP_BACKEND_URL || "https://api-consumet-org-8.onrender.com";
 
 if (typeof window !== "undefined" && process.env.NODE_ENV !== "production") {
   // Confirm connection in dev console

@@ -8,7 +8,7 @@ import "swiper/css";
 import "swiper/css/scrollbar";
 
 function AnimeCardsSkeleton() {
-  const { height, width } = useWindowDimensions();
+  const { width } = useWindowDimensions();
 
   return (
     <div

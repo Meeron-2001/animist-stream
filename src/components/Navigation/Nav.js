@@ -9,7 +9,7 @@ import useWindowDimensions from "../../hooks/useWindowDimensions";
 
 function Nav() {
   const [isActive, setIsActive] = useState(false);
-  const { height, width } = useWindowDimensions();
+  const { width } = useWindowDimensions();
 
   return (
     <div>

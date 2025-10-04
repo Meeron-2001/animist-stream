@@ -8,7 +8,7 @@ import useWindowDimensions from "../../hooks/useWindowDimensions";
 
 function Search({ isActive, setIsActive }) {
   const [title, setTitle] = useState("");
-  const { width, height } = useWindowDimensions();
+  const { width } = useWindowDimensions();
   const navigate = useNavigate();
 
   function searchEnter() {
