@@ -1,5 +1,5 @@
 import { api } from "../lib/api";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import styled from "styled-components";
 import SearchResultsSkeleton from "../components/skeletons/SearchResultsSkeleton";
@@ -9,18 +9,18 @@ function PopularMovies() {
   const [animeDetails, setAnimeDetails] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    getAnime();
-  }, []);
-
-  async function getAnime() {
+  const getAnime = useCallback(async () => {
     window.scrollTo(0, 0);
     let res = await api.get(`/api/getmalinfo?criteria=movie&count=100`);
 
     setLoading(false);
     setAnimeDetails(res.data.data);
     document.title = "Popular Movies - Animist";
-  }
+  }, []);
+
+  useEffect(() => {
+    getAnime();
+  }, [getAnime]);
 
   return (
     <div>

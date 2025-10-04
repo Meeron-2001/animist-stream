@@ -4,7 +4,7 @@ import "react-loading-skeleton/dist/skeleton.css";
 import useWindowDimensions from "../../hooks/useWindowDimensions";
 
 function CarouselSkeleton() {
-  const { height, width } = useWindowDimensions();
+  const { width } = useWindowDimensions();
 
   return (
     <div

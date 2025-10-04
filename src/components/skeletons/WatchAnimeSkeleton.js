@@ -4,7 +4,7 @@ import Skeleton from "react-loading-skeleton";
 import useWindowDimensions from "../../hooks/useWindowDimensions";
 
 function WatchAnimeSkeleton() {
-  const { width, height } = useWindowDimensions();
+  const { width } = useWindowDimensions();
 
   return (
     <div>

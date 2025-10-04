@@ -1,4 +1,3 @@
-import axios from "axios";
 import { api } from "../lib/api";
 import React, { useEffect, useState, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";

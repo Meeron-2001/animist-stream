@@ -4,7 +4,7 @@ import Skeleton from "react-loading-skeleton";
 import useWindowDimensions from "../../hooks/useWindowDimensions";
 
 function SearchResultsSkeleton({ name }) {
-  const { height, width } = useWindowDimensions();
+  const { width } = useWindowDimensions();
 
   return (
     <Parent>

@@ -182,8 +182,6 @@ function VideoPlayer({
 
         player.on("ended", function() {
           localStorage.removeItem(title);
-          console.log(currentEpisode + " _ " + totalEpisodes);
-          console.log(episode + " _ " + slug);
 
           if (
             localStorage.getItem("autoplay") === "true" &&
@@ -213,11 +211,9 @@ function VideoPlayer({
       function updateQuality(newQuality) {
         if (newQuality === 0) {
           window.hls.currentLevel = -1;
-          console.log("Auto quality selection");
         } else {
           window.hls.levels.forEach((level, levelIndex) => {
             if (level.height === newQuality) {
-              console.log("Found quality match with " + newQuality);
               window.hls.currentLevel = levelIndex;
             }
           });

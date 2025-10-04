@@ -1,5 +1,5 @@
 import { api } from "../../lib/api";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import styled from "styled-components";
 import { Swiper, SwiperSlide } from "swiper/react";
@@ -13,17 +13,18 @@ import "swiper/css/scrollbar";
 function AnimeCards(props) {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
-  useEffect(() => {
-    getData();
-  }, []);
 
-  async function getData() {
+  const getData = useCallback(async () => {
     const res = await api.get(
       `/api/getmalinfo?criteria=${props.criteria}&count=${props.count}`
     );
     setLoading(false);
     setData(res.data.data);
-  }
+  }, [props.criteria, props.count]);
+
+  useEffect(() => {
+    getData();
+  }, [getData]);
   return (
     <div>
       {loading && (
