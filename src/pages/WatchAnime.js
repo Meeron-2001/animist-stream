@@ -1,4 +1,5 @@
 import axios from "axios";
+import { api } from "../lib/api";
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import styled from "styled-components";
@@ -10,6 +11,7 @@ import WatchAnimeSkeleton from "../components/skeletons/WatchAnimeSkeleton";
 import useWindowDimensions from "../hooks/useWindowDimensions";
 import VideoPlayer from "../components/VideoPlayer/VideoPlayer";
 import ServersList from "../components/WatchAnime/ServersList";
+import Loading from "../components/Loading/Loading";
 
 function WatchAnime() {
   let episodeSlug = useParams().episode;
@@ -29,9 +31,7 @@ function WatchAnime() {
   async function getEpisodeLinks() {
     setLoading(true);
     window.scrollTo(0, 0);
-    let res = await axios.get(
-      `${process.env.REACT_APP_BACKEND_URL}api/getlinks?link=/${episodeSlug}`
-    );
+    let res = await api.get(`/api/getlinks?link=/${episodeSlug}`);
     setLoading(false);
     setEpisodeLinks(res.data);
     setCurrentServer(res.data[0].vidstreaming);
@@ -53,7 +53,7 @@ function WatchAnime() {
       .replace("Episode", "EP")} - ${res.data[0].titleName.substring(
       0,
       res.data[0].titleName.indexOf("Episode")
-    )} - Miyou`;
+    )} - Animist`;
   }
 
   function getLocalStorage(animeDetails) {
@@ -127,7 +127,12 @@ function WatchAnime() {
 
   return (
     <div>
-      {loading && <WatchAnimeSkeleton />}
+      {loading && (
+        <>
+          <Loading />
+          <WatchAnimeSkeleton />
+        </>
+      )}
       {!loading && (
         <Wrapper>
           {episodeLinks.length > 0 && currentServer !== "" && (

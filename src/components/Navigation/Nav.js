@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import styled from "styled-components";
+import Logo from "../../assets/logo.svg";
 import { FiSearch } from "react-icons/fi";
 import { IconContext } from "react-icons";
 import Search from "./Search";
@@ -13,9 +14,9 @@ function Nav() {
   return (
     <div>
       <NavBar>
-        <Link to="/">
-          <img src="./assets/logo.svg" alt="Logo Here" />
-        </Link>
+        <LogoLink to="/" aria-label="Animist Home">
+          <img src={Logo} alt="Animist logo" />
+        </LogoLink>
         <div className="nav-links">
           <Links to="/trending/1">Trending</Links>
           <Links to="/popular/1">Popular</Links>
@@ -110,12 +111,17 @@ const NavBar = styled.nav`
   @media screen and (max-width: 600px) {
     margin: 1rem 2rem;
     margin-top: 1rem;
-    img {
-      height: 1.7rem;
-    }
     .nav-links {
       display: none;
     }
+  }
+`;
+
+const LogoLink = styled(Link)`
+  display: inline-flex;
+  align-items: center;
+  img {
+    height: 36px;
   }
 `;
 

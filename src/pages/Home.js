@@ -8,6 +8,7 @@ import HomeSkeleton from "../components/skeletons/CarouselSkeleton";
 import useWindowDimensions from "../hooks/useWindowDimensions";
 import WatchingEpisodes from "../components/Home/WatchingEpisodes";
 import { TrendingAnimeQuery } from "../hooks/searchQueryStrings";
+import Loading from "../components/Loading/Loading";
 
 function Home() {
   const [images, setImages] = useState([]);
@@ -39,7 +40,7 @@ function Home() {
     });
     setImages(result.data.data.Page.media);
     setLoading(false);
-    document.title = "Miyou - Watch Anime Free Online With English Sub and Dub";
+    document.title = "Animist - Watch Anime Free Online With English Sub and Dub";
   }
 
   function checkSize() {
@@ -56,7 +57,12 @@ function Home() {
         <HomeHeading>
           <span>Recommended</span> to you
         </HomeHeading>
-        {loading && <HomeSkeleton />}
+        {loading && (
+          <>
+            <Loading />
+            <HomeSkeleton />
+          </>
+        )}
         {!loading && <Carousel images={images} />}
         {localStorage.getItem("Watching") && checkSize() && (
           <div>

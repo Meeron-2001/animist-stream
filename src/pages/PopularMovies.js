@@ -1,8 +1,9 @@
-import axios from "axios";
+import { api } from "../lib/api";
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import styled from "styled-components";
 import SearchResultsSkeleton from "../components/skeletons/SearchResultsSkeleton";
+import Loading from "../components/Loading/Loading";
 
 function PopularMovies() {
   const [animeDetails, setAnimeDetails] = useState([]);
@@ -14,19 +15,22 @@ function PopularMovies() {
 
   async function getAnime() {
     window.scrollTo(0, 0);
-    let res = await axios.get(
-      `${process.env.REACT_APP_BACKEND_URL}api/getmalinfo?criteria=movie&count=100`
-    );
+    let res = await api.get(`/api/getmalinfo?criteria=movie&count=100`);
 
     setLoading(false);
     console.log(res.data.data);
     setAnimeDetails(res.data.data);
-    document.title = "Popular Anime - Miyou";
+    document.title = "Popular Movies - Animist";
   }
 
   return (
     <div>
-      {loading && <SearchResultsSkeleton name="Popular Movie" />}
+      {loading && (
+        <>
+          <Loading />
+          <SearchResultsSkeleton name="Popular Movie" />
+        </>
+      )}
       {!loading && (
         <Parent>
           <Heading>

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { api } from "../lib/api";
 import { useParams, Link } from "react-router-dom";
 import styled from "styled-components";
 import { BiArrowToBottom, BiFullscreen } from "react-icons/bi";
@@ -14,6 +15,7 @@ import useWindowDimensions from "../hooks/useWindowDimensions";
 import VideoPlayer from "../components/VideoPlayer/VideoPlayer";
 import { searchByIdQuery } from "../hooks/searchQueryStrings";
 import toast from "react-hot-toast";
+import Loading from "../components/Loading/Loading";
 
 function WatchAnimeV2() {
   const mal_id = useParams().id;
@@ -35,8 +37,8 @@ function WatchAnimeV2() {
   async function getEpisodeLinks() {
     setLoading(true);
     window.scrollTo(0, 0);
-    let res = await axios.get(
-      `${process.env.REACT_APP_BACKEND_URL}api/getmixlinks?id=${slug}&ep=${episode}`
+    let res = await api.get(
+      `/api/getmixlinks?id=${slug}&ep=${episode}`
     );
     setEpisodeLinks(res.data);
     setCurrentServer(res.data.gogoLink);
@@ -67,7 +69,7 @@ function WatchAnimeV2() {
     });
     setAnimeDetails(aniRes.data.data.Media);
     document.title = `${aniRes.data.data.Media.title.userPreferred} ${res.data.isDub ? "(Dub)" : "(Sub)"
-      } EP-${episode} - Miyou`;
+      } EP-${episode} - Animist`;
     setLoading(false);
   }
 
@@ -114,7 +116,12 @@ function WatchAnimeV2() {
 
   return (
     <div>
-      {loading && <WatchAnimeSkeleton />}
+      {loading && (
+        <>
+          <Loading />
+          <WatchAnimeSkeleton />
+        </>
+      )}
       {!loading && (
         <Wrapper>
           {episodeLinks && animeDetails && currentServer !== "" && (

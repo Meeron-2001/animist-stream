@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="220" height="44" viewBox="0 0 220 44" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Animist logo">
+  <defs>
+    <linearGradient id="aniGradient" x1="0" y1="0" x2="220" y2="44" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#9D50FF"/>
+      <stop offset="50%" stop-color="#FF4D8D"/>
+      <stop offset="100%" stop-color="#3AA0FF"/>
+    </linearGradient>
+    <filter id="neonGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <style>
+      @media (prefers-color-scheme: dark) {
+        text { fill: url(#aniGradient); }
+      }
+    </style>
+  </defs>
+
+  <!-- Background subtle rounded rect for contrast on dark themes -->
+  <rect x="1" y="1" rx="10" ry="10" width="218" height="42" fill="rgba(255,255,255,0.02)" stroke="rgba(157,80,255,0.25)"/>
+
+  <!-- Wordmark: "Ani" highlighted, "mist" elegant/italic -->
+  <g filter="url(#neonGlow)">
+    <text x="18" y="30" font-family="'Orbitron','Poppins','Raleway',system-ui,-apple-system,sans-serif" font-size="26" font-weight="700" letter-spacing="0.5">
+      <tspan fill="url(#aniGradient)">Ani</tspan>
+      <tspan font-weight="500" font-style="italic" fill="#C9D6FF">mist</tspan>
+    </text>
+  </g>
+
+  <!-- Accent underline stroke with gradient -->
+  <path d="M18 34 H160" stroke="url(#aniGradient)" stroke-width="2" stroke-linecap="round" opacity="0.8"/>
+</svg>

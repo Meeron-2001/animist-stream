@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import styled from "styled-components";
 import SearchResultsSkeleton from "../components/skeletons/SearchResultsSkeleton";
+import Loading from "../components/Loading/Loading";
 import { top100AnimeQuery } from "../hooks/searchQueryStrings";
 
 function Top100Anime() {
@@ -36,11 +37,16 @@ function Top100Anime() {
     });
     setLoading(false);
     setAnimeDetails(res.data.data.Page.media);
-    document.title = "Top 100 Anime - Miyou";
+    document.title = "Top 100 Anime - Animist";
   }
   return (
     <div>
-      {loading && <SearchResultsSkeleton name="Top 100 Anime" />}
+      {loading && (
+        <>
+          <Loading />
+          <SearchResultsSkeleton name="Top 100 Anime" />
+        </>
+      )}
       {!loading && (
         <Parent>
           <Heading>

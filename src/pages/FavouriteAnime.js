@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import styled from "styled-components";
 import SearchResultsSkeleton from "../components/skeletons/SearchResultsSkeleton";
+import Loading from "../components/Loading/Loading";
 import { favouritesAnimeQuery } from "../hooks/searchQueryStrings";
 
 function FavouriteAnime() {
@@ -36,11 +37,16 @@ function FavouriteAnime() {
     });
     setLoading(false);
     setAnimeDetails(res.data.data.Page.media);
-    document.title = "Favorite Anime - Miyou";
+    document.title = "Favorite Anime - Animist";
   }
   return (
     <div>
-      {loading && <SearchResultsSkeleton name="Favourite Anime" />}
+      {loading && (
+        <>
+          <Loading />
+          <SearchResultsSkeleton name="Favourite Anime" />
+        </>
+      )}
       {!loading && (
         <Parent>
           <Heading>

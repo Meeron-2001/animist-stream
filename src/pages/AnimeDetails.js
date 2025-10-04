@@ -1,9 +1,11 @@
 import axios from "axios";
+import { api } from "../lib/api";
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import styled from "styled-components";
 import AnimeDetailsSkeleton from "../components/skeletons/AnimeDetailsSkeleton";
 import useWindowDimensions from "../hooks/useWindowDimensions";
+import Loading from "../components/Loading/Loading";
 
 function AnimeDetails() {
   let slug = useParams().slug;
@@ -21,13 +23,11 @@ function AnimeDetails() {
     setLoading(true);
     setExpanded(false);
     window.scrollTo(0, 0);
-    let res = await axios.get(
-      `${process.env.REACT_APP_BACKEND_URL}api/getanime?link=/category/${slug}`
-    );
+    let res = await api.get(`/api/getanime?link=/category/${slug}`);
     setLoading(false);
     setAnimeDetails(res.data);
     getLocalStorage(res.data);
-    document.title = res.data[0].gogoResponse.title + " - Miyou"
+    document.title = res.data[0].gogoResponse.title + " - Animist"
   }
 
   function readMoreHandler() {
@@ -51,7 +51,12 @@ function AnimeDetails() {
 
   return (
     <div>
-      {loading && <AnimeDetailsSkeleton />}
+      {loading && (
+        <>
+          <Loading />
+          <AnimeDetailsSkeleton />
+        </>
+      )}
       {!loading && (
         <Content>
           {animeDetails.length > 0 && (

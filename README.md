@@ -1,12 +1,8 @@
-![Miyou Banner](https://user-images.githubusercontent.com/61660793/202897934-8656a581-a55a-47d7-9658-ee9e4f2295dc.png)
+![Animist Banner](https://user-images.githubusercontent.com/61660793/202897934-8656a581-a55a-47d7-9658-ee9e4f2295dc.png)
 
-# Welcome to Miyou Github Repository
+# Animist
 
-![Miyou Mockup Photo Here](https://user-images.githubusercontent.com/61660793/202531185-92331444-9216-4dd2-8616-2772a9d65f1d.jpg)
-
-## Miyou is an online anime streaming site built using React.js. [Visit Here](https://www.miyou.me/).
-
-### Next.js implementation of this web-app can be found [here.](https://github.com/reyangurjar/Miyou.me) Hosted [URL](https://miyou-topaz.vercel.app/)
+Animist is an online anime streaming site built using React.js.
 
 ### `npm i` (Install the dependencies)
 
@@ -16,6 +12,13 @@
 
 First add a .env file in your root directory. Then add <br />
 `REACT_APP_BACKEND_URL='https://miyou-api.cyclic.app/' REACT_APP_BASE_URL='https://graphql.anilist.co'`
+
+## What’s new
+
+- Text-based brand logo "Animist" in the header (Google Font Zen Dots).
+- Updated titles/metadata to Animist; favicon retained.
+- New `<Loading />` component with glowing orb animation integrated across pages during data fetch.
+- New footer on all pages: "Created by Meeron".
 
 ## Todo
 
@@ -33,4 +36,4 @@ You can contribute to this project by forking the project, adding or making chan
 
 ## Disclaimer
 
-I'm privating the backend repo because a lot of people are copying the project without giving any credits and pretending to be the real one. You can only test this on your localhost and cannot host it. It will give you CORS error.
+The backend repo is private. You can test this on your localhost; hosting may give CORS errors unless you control the backend domain.

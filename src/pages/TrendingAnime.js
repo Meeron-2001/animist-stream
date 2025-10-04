@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import styled from "styled-components";
 import SearchResultsSkeleton from "../components/skeletons/SearchResultsSkeleton";
+import Loading from "../components/Loading/Loading";
 import { TrendingAnimeQuery } from "../hooks/searchQueryStrings";
 
 function TrendingAnime() {
@@ -36,11 +37,16 @@ function TrendingAnime() {
     });
     setLoading(false);
     setAnimeDetails(res.data.data.Page.media);
-    document.title = "Trending Anime - Miyou";
+    document.title = "Trending Anime - Animist";
   }
   return (
     <div>
-      {loading && <SearchResultsSkeleton name="Trending Anime" />}
+      {loading && (
+        <>
+          <Loading />
+          <SearchResultsSkeleton name="Trending Anime" />
+        </>
+      )}
       {!loading && (
         <Parent>
           <Heading>

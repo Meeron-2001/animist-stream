@@ -1,10 +1,11 @@
-import axios from "axios";
+import { api } from "../../lib/api";
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import styled from "styled-components";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Scrollbar } from "swiper";
 import AnimeCardsSkeleton from "../../components/skeletons/AnimeCardsSkeleton";
+import Loading from "../Loading/Loading";
 
 import "swiper/css";
 import "swiper/css/scrollbar";
@@ -17,16 +18,20 @@ function AnimeCards(props) {
   }, []);
 
   async function getData() {
-    let res = await axios.get(
-      `${process.env.REACT_APP_BACKEND_URL}api/getmalinfo?criteria=${props.criteria}&count=${props.count}`
+    const res = await api.get(
+      `/api/getmalinfo?criteria=${props.criteria}&count=${props.count}`
     );
-
     setLoading(false);
     setData(res.data.data);
   }
   return (
     <div>
-      {loading && <AnimeCardsSkeleton />}
+      {loading && (
+        <>
+          <Loading />
+          <AnimeCardsSkeleton />
+        </>
+      )}
       {!loading && (
         <Swiper
           slidesPerView={7}

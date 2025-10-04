@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import styled from "styled-components";
 import SearchResultsSkeleton from "../components/skeletons/SearchResultsSkeleton";
+import Loading from "../components/Loading/Loading";
 import { PopularAnimeQuery } from "../hooks/searchQueryStrings";
 
 function PopularAnime() {
@@ -37,11 +38,16 @@ function PopularAnime() {
     setLoading(false);
     console.log(res.data.data.Page.media);
     setAnimeDetails(res.data.data.Page.media);
-    document.title = "Popular Anime - Miyou";
+    document.title = "Popular Anime - Animist";
   }
   return (
     <div>
-      {loading && <SearchResultsSkeleton name="Popular Anime" />}
+      {loading && (
+        <>
+          <Loading />
+          <SearchResultsSkeleton name="Popular Anime" />
+        </>
+      )}
       {!loading && (
         <Parent>
           <Heading>

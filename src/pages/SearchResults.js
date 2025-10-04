@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import styled from "styled-components";
 import SearchResultsSkeleton from "../components/skeletons/SearchResultsSkeleton";
+import Loading from "../components/Loading/Loading";
 import { searchAnimeQuery } from "../hooks/searchQueryStrings";
 
 function SearchResults() {
@@ -35,11 +36,16 @@ function SearchResults() {
     });
     setLoading(false);
     setResults(res.data.data.Page.media);
-    document.title = urlParams + " - Miyou";
+    document.title = urlParams + " - Animist";
   }
   return (
     <div>
-      {loading && <SearchResultsSkeleton />}
+      {loading && (
+        <>
+          <Loading />
+          <SearchResultsSkeleton />
+        </>
+      )}
       {!loading && (
         <Parent>
           <Heading>

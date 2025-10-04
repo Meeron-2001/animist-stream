@@ -8,6 +8,7 @@ import AnimeCardsSkeleton from "../skeletons/AnimeCardsSkeleton";
 import { IoClose } from "react-icons/io5";
 import { IconContext } from "react-icons";
 import { searchWatchedId } from "../../hooks/searchQueryStrings";
+import Loading from "../Loading/Loading";
 
 import "swiper/css";
 import "swiper/css/scrollbar";
@@ -75,7 +76,12 @@ function WatchingEpisodes() {
 
   return (
     <div>
-      {loading && <AnimeCardsSkeleton />}
+      {loading && (
+        <>
+          <Loading />
+          <AnimeCardsSkeleton />
+        </>
+      )}
       {!loading && (
         <Swiper
           slidesPerView={7}

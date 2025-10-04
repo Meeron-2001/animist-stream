@@ -1,10 +1,12 @@
 import axios from "axios";
+import { api } from "../lib/api";
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import styled from "styled-components";
 import AnimeDetailsSkeleton from "../components/skeletons/AnimeDetailsSkeleton";
 import useWindowDimensions from "../hooks/useWindowDimensions";
 import { searchByIdQuery } from "../hooks/searchQueryStrings";
+import Loading from "../components/Loading/Loading";
 
 function MalAnimeDetails() {
   let id = useParams().id;
@@ -47,13 +49,16 @@ function MalAnimeDetails() {
       console.log(err);
     });
     setAnilistResponse(aniRes.data.data.Media);
-    let malRes = await axios
-      .get(`${process.env.REACT_APP_BACKEND_URL}api/getidinfo?malId=${id}`)
+    let malRes = await api
+      .get(`/api/getidinfo?malId=${id}`)
       .catch((err) => {
         setNotAvailable(true);
       });
     setMalResponse(malRes.data);
     setLoading(false);
+    if (aniRes?.data?.data?.Media?.title?.userPreferred) {
+      document.title = `${aniRes.data.data.Media.title.userPreferred} - Animist`;
+    }
   }
 
   return (
@@ -64,7 +69,12 @@ function MalAnimeDetails() {
           <h1>Oops! This Anime Is Not Available</h1>
         </NotAvailable>
       )}
-      {loading && !notAvailable && <AnimeDetailsSkeleton />}
+      {loading && !notAvailable && (
+        <>
+          <Loading />
+          <AnimeDetailsSkeleton />
+        </>
+      )}
       {!loading && !notAvailable && (
         <Content>
           {anilistResponse !== undefined && (
