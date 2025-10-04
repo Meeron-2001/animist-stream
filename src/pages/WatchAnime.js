@@ -1,6 +1,5 @@
-import axios from "axios";
 import { api } from "../lib/api";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import styled from "styled-components";
 import { BiArrowToBottom, BiFullscreen } from "react-icons/bi";
@@ -19,16 +18,12 @@ function WatchAnime() {
   const [episodeLinks, setEpisodeLinks] = useState([]);
   const [currentServer, setCurrentServer] = useState("");
   const [loading, setLoading] = useState(true);
-  const { width, height } = useWindowDimensions();
+  const { width } = useWindowDimensions();
   const [fullScreen, setFullScreen] = useState(false);
   const [internalPlayer, setInternalPlayer] = useState(true);
   const [localStorageDetails, setLocalStorageDetails] = useState(0);
 
-  useEffect(() => {
-    getEpisodeLinks();
-  }, [episodeSlug]);
-
-  async function getEpisodeLinks() {
+  const getEpisodeLinks = useCallback(async () => {
     setLoading(true);
     window.scrollTo(0, 0);
     let res = await api.get(`/api/getlinks?link=/${episodeSlug}`);
@@ -54,7 +49,11 @@ function WatchAnime() {
       0,
       res.data[0].titleName.indexOf("Episode")
     )} - Animist`;
-  }
+  }, [episodeSlug]);
+
+  useEffect(() => {
+    getEpisodeLinks();
+  }, [getEpisodeLinks]);
 
   function getLocalStorage(animeDetails) {
     animeDetails = animeDetails.substring(0, animeDetails.length - 1);
@@ -584,49 +583,6 @@ const EpisodeLink = styled(Link)`
   }
 `;
 
-const ServerWrapper = styled.div`
-  p {
-    color: white;
-    font-size: 1.4rem;
-    font-weight: 400;
-    text-decoration: underline;
-  }
-
-  .server-wrapper {
-    padding: 1rem;
-    background-color: #1a1927;
-    border: 1px solid #272639;
-    border-radius: 0.4rem;
-    box-shadow: 0px 4.41109px 20.291px rgba(16, 16, 24, 0.81);
-  }
-
-  .serverlinks {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
-    grid-gap: 1rem;
-    grid-row-gap: 1rem;
-    justify-content: space-between;
-    margin-top: 1rem;
-  }
-
-  button {
-    cursor: pointer;
-    outline: none;
-    color: white;
-    background-color: #242235;
-    border: 1px solid #393653;
-    padding: 0.7rem 1.5rem;
-    border-radius: 0.4rem;
-    font-weight: 400;
-    font-size: 0.9rem;
-  }
-
-  @media screen and (max-width: 600px) {
-    p {
-      font-size: 1.2rem;
-    }
-  }
-`;
 
 const Wrapper = styled.div`
   margin: 2rem 5rem 2rem 5rem;

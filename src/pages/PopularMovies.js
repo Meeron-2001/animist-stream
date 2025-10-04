@@ -18,7 +18,6 @@ function PopularMovies() {
     let res = await api.get(`/api/getmalinfo?criteria=movie&count=100`);
 
     setLoading(false);
-    console.log(res.data.data);
     setAnimeDetails(res.data.data);
     document.title = "Popular Movies - Animist";
   }
