@@ -15,11 +15,22 @@ function AnimeCards(props) {
   const [loading, setLoading] = useState(true);
 
   const getData = useCallback(async () => {
-    const res = await api.get(
-      `/api/getmalinfo?criteria=${props.criteria}&count=${props.count}`
-    );
-    setLoading(false);
-    setData(res.data.data);
+    setLoading(true);
+    try {
+      const res = await api.get(
+        `/api/getmalinfo?criteria=${props.criteria}&count=${props.count}`
+      );
+      if (Array.isArray(res?.data?.data)) {
+        setData(res.data.data);
+      } else {
+        setData([]);
+      }
+    } catch (err) {
+      console.error(err);
+      setData([]);
+    } finally {
+      setLoading(false);
+    }
   }, [props.criteria, props.count]);
 
   useEffect(() => {
@@ -66,12 +77,15 @@ function AnimeCards(props) {
           className="mySwiper"
         >
           {data.map((item, i) => (
-            <SwiperSlide>
+            <SwiperSlide key={item?.node?.id || i}>
               <Wrapper>
-                <Link to={"id/" + item.node.id}>
-                  <img src={item.node.main_picture.large} alt="" />
+                <Link to={`/id/${item?.node?.id}`}>
+                  <img
+                    src={item?.node?.main_picture?.large || item?.node?.main_picture?.medium || "https://i.ibb.co/rv061Rg/showcase.png"}
+                    alt={item?.node?.title || "Anime poster"}
+                  />
                 </Link>
-                <p>{item.node.title}</p>
+                <p>{item?.node?.title || "Unknown Title"}</p>
               </Wrapper>
             </SwiperSlide>
           ))}

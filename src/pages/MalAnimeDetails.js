@@ -24,7 +24,7 @@ function MalAnimeDetails() {
       setNotAvailable(true);
       return;
     }
-    let aniRes = await axios({
+    const aniRes = await axios({
       url: process.env.REACT_APP_BASE_URL,
       method: "POST",
       headers: {
@@ -39,13 +39,25 @@ function MalAnimeDetails() {
       },
     }).catch((err) => {
       console.error(err);
+      return null;
     });
+    if (!aniRes || !aniRes.data?.data?.Media) {
+      setNotAvailable(true);
+      setLoading(false);
+      return;
+    }
     setAnilistResponse(aniRes.data.data.Media);
-    let malRes = await api
+    const malRes = await api
       .get(`/api/getidinfo?malId=${id}`)
       .catch((err) => {
-        setNotAvailable(true);
+        console.error(err);
+        return null;
       });
+    if (!malRes || !malRes.data) {
+      setNotAvailable(true);
+      setLoading(false);
+      return;
+    }
     setMalResponse(malRes.data);
     setLoading(false);
     if (aniRes?.data?.data?.Media?.title?.userPreferred) {

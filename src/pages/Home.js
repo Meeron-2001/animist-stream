@@ -17,7 +17,7 @@ function Home() {
 
   const getImages = useCallback(async () => {
     window.scrollTo(0, 0);
-    let result = await axios({
+    const result = await axios({
       url: process.env.REACT_APP_BASE_URL,
       method: "POST",
       headers: {
@@ -33,7 +33,13 @@ function Home() {
       },
     }).catch((err) => {
       console.error(err);
+      return null;
     });
+    if (!result || !result.data?.data?.Page?.media) {
+      setImages([]);
+      setLoading(false);
+      return;
+    }
     setImages(result.data.data.Page.media);
     setLoading(false);
     document.title = "Animist - Watch Anime Free Online With English Sub and Dub";
@@ -44,12 +50,15 @@ function Home() {
   }, [getImages]);
 
   function checkSize() {
-    let lsData = localStorage.getItem("Watching");
-    lsData = JSON.parse(lsData);
-    if (lsData.length === 0) {
+    const item = localStorage.getItem("Watching");
+    if (!item) return false;
+    try {
+      const lsData = JSON.parse(item);
+      return Array.isArray(lsData) && lsData.length > 0;
+    } catch (err) {
+      console.error("Failed to parse Watching from localStorage", err);
       return false;
     }
-    return true;
   }
   return (
     <div>

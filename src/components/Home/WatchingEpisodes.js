@@ -21,14 +21,39 @@ function WatchingEpisodes() {
 
   const getAnimeData = useCallback(async () => {
     setLoading(true);
-    let data = localStorage.getItem("Watching");
-    data = JSON.parse(data);
-    setLocalData(data);
-    let ids = [];
-    for (let i = 0; i < data.length; i++) {
-      ids.push(data[i].malId);
+    const stored = localStorage.getItem("Watching");
+    if (!stored) {
+      setLocalData([]);
+      setData([]);
+      setLoading(false);
+      return;
     }
-    let result = await axios({
+    let parsed;
+    try {
+      parsed = JSON.parse(stored);
+    } catch (err) {
+      console.error("Failed to parse Watching from localStorage", err);
+      setLocalData([]);
+      setData([]);
+      setLoading(false);
+      return;
+    }
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      setLocalData([]);
+      setData([]);
+      setLoading(false);
+      return;
+    }
+    setLocalData(parsed);
+    const ids = parsed
+      .map((entry) => entry?.malId)
+      .filter((id) => typeof id === "number" || typeof id === "string");
+    if (ids.length === 0) {
+      setData([]);
+      setLoading(false);
+      return;
+    }
+    const result = await axios({
       url: process.env.REACT_APP_BASE_URL,
       method: "POST",
       headers: {
@@ -43,18 +68,22 @@ function WatchingEpisodes() {
       },
     }).catch((err) => {
       console.error(err);
+      return null;
     });
-    let output = [];
-    for (let i = 0; i < data.length; i++) {
-      for (let j = 0; j < result.data.data.Page.media.length; j++) {
-        if (
-          parseInt(result.data.data.Page.media[j].idMal) ===
-          parseInt(data[i].malId)
-        ) {
-          output.push(result.data.data.Page.media[j]);
-        }
-      }
+    const media = result?.data?.data?.Page?.media;
+    if (!Array.isArray(media)) {
+      setData([]);
+      setLoading(false);
+      return;
     }
+    const output = parsed
+      .map((entry) => {
+        const match = media.find(
+          (item) => parseInt(item?.idMal, 10) === parseInt(entry?.malId, 10)
+        );
+        return match || null;
+      })
+      .filter(Boolean);
     setData(output);
     setLoading(false);
   }, []);
@@ -64,13 +93,24 @@ function WatchingEpisodes() {
   }, [getAnimeData]);
 
   function removeAnime(index) {
-    let lsData = localStorage.getItem("Watching");
-    lsData = JSON.parse(lsData);
+    const stored = localStorage.getItem("Watching");
+    if (!stored) {
+      return;
+    }
+    let lsData;
+    try {
+      lsData = JSON.parse(stored);
+    } catch (err) {
+      console.error("Failed to parse Watching from localStorage", err);
+      return;
+    }
+    if (!Array.isArray(lsData)) {
+      return;
+    }
     lsData.splice(index, 1);
     setLocalData(lsData);
-    lsData = JSON.stringify(lsData);
-    localStorage.setItem("Watching", lsData);
-    data.splice(index, 1);
+    localStorage.setItem("Watching", JSON.stringify(lsData));
+    setData((prev) => prev.filter((_, i) => i !== index));
     setChange(!change);
   }
 

@@ -14,7 +14,7 @@ function SearchResults() {
   const getResults = useCallback(async () => {
     setLoading(true);
     window.scrollTo(0, 0);
-    let res = await axios({
+    const res = await axios({
       url: process.env.REACT_APP_BASE_URL,
       method: "POST",
       headers: {
@@ -29,9 +29,15 @@ function SearchResults() {
       },
     }).catch((err) => {
       console.error(err);
+      return null;
     });
     setLoading(false);
-    setResults(res.data.data.Page.media);
+    if (!res || !res.data?.data?.Page?.media) {
+      setResults([]);
+      return;
+    }
+    const validResults = res.data.data.Page.media.filter((item) => item?.idMal);
+    setResults(validResults);
     document.title = urlParams + " - Animist";
   }, [urlParams]);
 
