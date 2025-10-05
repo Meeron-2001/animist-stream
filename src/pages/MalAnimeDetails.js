@@ -169,7 +169,7 @@ function MalAnimeDetails() {
         </>
       )}
       {!loading && !notAvailable && (
-        <Content>
+        <div style={{ margin: width <= 600 ? '1rem' : '2rem 5rem', position: 'relative' }}>
           {anilistResponse !== undefined && (
             <div>
               <Banner
@@ -319,7 +319,7 @@ function MalAnimeDetails() {
               </Episode>
             </div>
           )}
-        </Content>
+                </div>
       )}
     </div>
   );
