@@ -34,7 +34,7 @@ function MalAnimeDetails() {
       data: {
         query: searchByIdQuery,
         variables: {
-          id,
+          id: Number(id),
         },
       },
     }).catch((err) => {
@@ -49,19 +49,60 @@ function MalAnimeDetails() {
     const media = aniRes.data.data.Media;
     setAnilistResponse(media);
 
+    console.log("Fetching meta info for Anilist ID:", media.id);
     const meta = await fetchMetaInfo(media.id);
+    console.log("Meta response:", meta);
 
     const normalizeEpisodes = (episodes = []) => {
       if (!Array.isArray(episodes)) return [];
       return [...episodes].sort((a, b) => {
-        const getNum = (ep) =>
-          Number(ep?.number ?? ep?.episode ?? ep?.title?.match(/\d+/)?.[0] ?? 0);
+        const getNum = (ep) => {
+          if (ep?.number !== undefined && ep?.number !== null) {
+            return Number(ep.number);
+          }
+          if (ep?.episode !== undefined && ep?.episode !== null) {
+            return Number(ep.episode);
+          }
+          const match = typeof ep.title === "string" ? ep.title.match(/\d+/) : null;
+          return match ? Number(match[0]) : null;
+        };
         return getNum(a) - getNum(b);
       });
     };
 
-    const subEpisodes = normalizeEpisodes(meta?.episodes);
-    const dubEpisodes = normalizeEpisodes(meta?.episodesDub);
+    // Try primary provider first, then fallback to an alternate provider if empty
+    let metaData = meta;
+    const metaEmpty =
+      !metaData ||
+      ((!(Array.isArray(metaData?.episodes)) || metaData.episodes.length === 0) &&
+        (!(Array.isArray(metaData?.episodesDub)) || metaData.episodesDub.length === 0));
+    if (metaEmpty) {
+      console.log("[Meta] gogoanime returned empty. Trying fallback provider: zoro");
+      const fallback = await fetchMetaInfo(media.id, { provider: "zoro" });
+      if (fallback) metaData = fallback;
+      console.log("[Meta] zoro response:", metaData);
+    }
+
+    let subEpisodes = normalizeEpisodes(metaData?.episodes);
+    let dubEpisodes = normalizeEpisodes(metaData?.episodesDub);
+
+    // Final fallback: use AniList's streamingEpisodes as external links
+    if (
+      subEpisodes.length === 0 &&
+      dubEpisodes.length === 0 &&
+      Array.isArray(media.streamingEpisodes) &&
+      media.streamingEpisodes.length > 0
+    ) {
+      console.log("[Meta] Falling back to AniList.streamingEpisodes external links");
+      subEpisodes = media.streamingEpisodes.map((ep, i) => {
+        const match = typeof ep.title === "string" ? ep.title.match(/\d+/) : null;
+        return {
+          title: ep.title || `Episode ${i + 1}`,
+          url: ep.url,
+          number: match ? Number(match[0]) : i + 1,
+        };
+      });
+    }
     const hasSub = subEpisodes.length > 0;
     const hasDub = dubEpisodes.length > 0;
 
