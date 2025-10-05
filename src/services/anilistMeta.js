@@ -7,19 +7,25 @@ const META_BASE_URL =
 
 const DEFAULT_PROVIDER = "gogoanime";
 
-async function safeGet(url, params = {}) {
-  try {
-    const response = await axios.get(url, {
-      params,
-      timeout: 20000,
-      headers: {
-        Accept: "application/json",
-      },
-    });
-    return response.data;
-  } catch (error) {
-    console.warn("[anilistMeta] request failed", url, error?.message || error);
-    return null;
+async function safeGet(url, params = {}, retries = 3, delay = 1000) {
+  for (let i = 0; i < retries; i++) {
+    try {
+      const response = await axios.get(url, {
+        params,
+        timeout: 20000,
+        headers: {
+          Accept: "application/json",
+        },
+      });
+      return response.data;
+    } catch (error) {
+      console.warn(`[anilistMeta] request failed (attempt ${i + 1}/${retries})`, url, error?.message || error);
+      if (i < retries - 1) {
+        await new Promise(resolve => setTimeout(resolve, delay));
+      } else {
+        return null;
+      }
+    }
   }
 }
 

@@ -95,6 +95,60 @@ function MalAnimeDetails() {
     getInfo();
   }, [getInfo]);
 
+  useEffect(() => {
+    if (!playbackData) return;
+    if (selectedType === "sub" && !playbackData.hasSub && playbackData.hasDub) {
+      setSelectedType("dub");
+    }
+    if (selectedType === "dub" && !playbackData.hasDub && playbackData.hasSub) {
+      setSelectedType("sub");
+    }
+  }, [playbackData, selectedType]);
+
+  const getEpisodeNumber = useCallback((episode) => {
+    if (!episode) return null;
+    if (episode.number !== undefined && episode.number !== null) {
+      return Number(episode.number);
+    }
+    if (episode.episode !== undefined && episode.episode !== null) {
+      return Number(episode.episode);
+    }
+    const match = typeof episode.title === "string" ? episode.title.match(/\d+/) : null;
+    return match ? Number(match[0]) : null;
+  }, []);
+
+  const activeEpisodes = useMemo(() => {
+    if (!playbackData) return [];
+    if (selectedType === "dub" && playbackData.hasDub) return playbackData.dubEpisodes;
+    if (selectedType === "sub" && playbackData.hasSub) return playbackData.subEpisodes;
+    if (playbackData.hasSub) return playbackData.subEpisodes;
+    if (playbackData.hasDub) return playbackData.dubEpisodes;
+    return [];
+  }, [playbackData, selectedType]);
+
+  const activeSlug = useMemo(() => {
+    if (!playbackData) return null;
+    if (selectedType === "dub" && playbackData.dubSlug) return playbackData.dubSlug;
+    if (selectedType === "sub" && playbackData.subSlug) return playbackData.subSlug;
+    return playbackData.subSlug || playbackData.dubSlug || null;
+  }, [playbackData, selectedType]);
+
+  const firstEpisodeNumber = activeEpisodes.length
+    ? getEpisodeNumber(activeEpisodes[0]) || 1
+    : null;
+
+  const watchLink = activeSlug && firstEpisodeNumber
+    ? `/play/${id}/${activeSlug}/${firstEpisodeNumber}`
+    : null;
+
+  const fallbackExternal = !watchLink && activeEpisodes.length
+    ? activeEpisodes[0]?.url || null
+    : null;
+
+  const hasEpisodes = activeEpisodes.length > 0;
+  const showToggle = Boolean(playbackData?.hasSub && playbackData?.hasDub);
+  const canPlayInternally = Boolean(activeSlug);
+
   function readMoreHandler() {
     setExpanded(!expanded);
   }
@@ -129,9 +183,19 @@ function MalAnimeDetails() {
               <ContentWrapper>
                 <Poster>
                   <img src={anilistResponse.coverImage.extraLarge} alt="" />
-                  {episodeInfo?.length > 0 && (
-                    <Button to={episodeInfo[0]?.url || "#"}>
-                      Watch Now
+                  {watchLink && (
+                    <Button to={watchLink}>
+                      Watch {selectedType === "dub" ? "Dub" : "Sub"}
+                    </Button>
+                  )}
+                  {!watchLink && fallbackExternal && (
+                    <Button
+                      as="a"
+                      href={fallbackExternal}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Watch {selectedType === "dub" ? "Dub" : "Sub"}
                     </Button>
                   )}
                 </Poster>
@@ -199,20 +263,57 @@ function MalAnimeDetails() {
               <Episode>
                 <DubContainer>
                   <h2>Episodes</h2>
-                  {episodeInfo?.length === 0 && <p>No streaming episodes available.</p>}
-                </DubContainer>
-                {episodeInfo?.length > 0 && (
-                  <Episodes>
-                    {episodeInfo.map((episode, index) => (
-                      <EpisodeLink
-                        key={episode?.id || index}
-                        to={episode?.url || "#"}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                  {showToggle && (
+                    <ToggleGroup>
+                      <ToggleButton
+                        type="button"
+                        className={selectedType === "sub" ? "active" : ""}
+                        onClick={() => setSelectedType("sub")}
+                        disabled={!playbackData?.hasSub}
                       >
-                        Episode {episode?.title || index + 1}
-                      </EpisodeLink>
-                    ))}
+                        Sub
+                      </ToggleButton>
+                      <ToggleButton
+                        type="button"
+                        className={selectedType === "dub" ? "active" : ""}
+                        onClick={() => setSelectedType("dub")}
+                        disabled={!playbackData?.hasDub}
+                      >
+                        Dub
+                      </ToggleButton>
+                    </ToggleGroup>
+                  )}
+                  {!hasEpisodes && <p>No streaming episodes available.</p>}
+                </DubContainer>
+                {hasEpisodes && (
+                  <Episodes>
+                    {activeEpisodes.map((episode, index) => {
+                      const episodeNumber = getEpisodeNumber(episode) || index + 1;
+                      const key = episode?.id || `${selectedType}-${episodeNumber}`;
+
+                      if (canPlayInternally) {
+                        return (
+                          <EpisodeLink
+                            key={key}
+                            to={`/play/${id}/${activeSlug}/${episodeNumber}`}
+                          >
+                            Episode {episodeNumber}
+                          </EpisodeLink>
+                        );
+                      }
+
+                      const externalHref = episode?.url || "#";
+                      return (
+                        <EpisodeExternal
+                          key={key}
+                          href={externalHref}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          Episode {episodeNumber}
+                        </EpisodeExternal>
+                      );
+                    })}
                   </Episodes>
                 )}
               </Episode>
@@ -370,12 +471,52 @@ const EpisodeLink = styled(Link)`
   }
 `;
 
-const Content = styled.div`
-  margin: 2rem 5rem 2rem 5rem;
-  position: relative;
+const EpisodeExternal = styled.a`
+  text-align: center;
+  color: white;
+  text-decoration: none;
+  background-color: #242235;
+  padding: 0.9rem 2rem;
+  font-weight: 500;
+  border-radius: 0.5rem;
+  border: 1px solid #393653;
+  transition: 0.2s;
+
+  :hover {
+    background-color: #7676ff;
+  }
 
   @media screen and (max-width: 600px) {
-    margin: 1rem;
+    padding: 1rem;
+    border-radius: 0.3rem;
+    font-weight: 500;
+  }
+`;
+
+const ToggleGroup = styled.div`
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+`;
+
+const ToggleButton = styled.button`
+  padding: 0.5rem 1.2rem;
+  border-radius: 0.4rem;
+  border: 1px solid #393653;
+  background-color: #242235;
+  color: white;
+  font-weight: 500;
+  cursor: pointer;
+  transition: 0.2s;
+
+  &.active {
+    background-color: #7676ff;
+    border-color: #7676ff;
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
   }
 `;
 
