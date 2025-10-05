@@ -1,79 +1,60 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import styled from "styled-components";
 import Carousel from "../components/Home/Carousel";
-import axios from "axios";
 import AnimeCards from "../components/Home/AnimeCards";
 import HomeSkeleton from "../components/skeletons/CarouselSkeleton";
 import useWindowDimensions from "../hooks/useWindowDimensions";
 import WatchingEpisodes from "../components/Home/WatchingEpisodes";
-import { TrendingAnimeQuery } from "../hooks/searchQueryStrings";
 import Loading from "../components/Loading/Loading";
+import { useMalApi } from "../hooks/useMalApi";
 
 function Home() {
-  const [images, setImages] = useState([]);
-  const [loading, setLoading] = useState(true);
   const { width } = useWindowDimensions();
+  const [hasWatching, setHasWatching] = useState(false);
 
-  const getImages = useCallback(async () => {
-    window.scrollTo(0, 0);
-    const result = await axios({
-      url: process.env.REACT_APP_BASE_URL,
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      data: {
-        query: TrendingAnimeQuery,
-        variables: {
-          page: 1,
-          perPage: 15,
-        },
-      },
-    }).catch((err) => {
-      console.error(err);
-      return null;
-    });
-    if (!result || !result.data?.data?.Page?.media) {
-      setImages([]);
-      setLoading(false);
-      return;
-    }
-    setImages(result.data.data.Page.media);
-    setLoading(false);
+  const { items: heroItems, loading: heroLoading } = useMalApi({
+    criteria: "bypopularity",
+    page: 1,
+    perPage: 10,
+    fallbackKey: "popular",
+  });
+
+  useEffect(() => {
     document.title = "Animist - Watch Anime Free Online With English Sub and Dub";
+    window.scrollTo(0, 0);
   }, []);
 
   useEffect(() => {
-    getImages();
-  }, [getImages]);
-
-  function checkSize() {
-    const item = localStorage.getItem("Watching");
-    if (!item) return false;
     try {
-      const lsData = JSON.parse(item);
-      return Array.isArray(lsData) && lsData.length > 0;
+      const stored = localStorage.getItem("Watching");
+      if (!stored) {
+        setHasWatching(false);
+        return;
+      }
+      const parsed = JSON.parse(stored);
+      setHasWatching(Array.isArray(parsed) && parsed.length > 0);
     } catch (err) {
-      console.error("Failed to parse Watching from localStorage", err);
-      return false;
+      console.warn("[Home] Failed to parse Watching from localStorage", err);
+      setHasWatching(false);
     }
-  }
+  }, []);
+
+  const carouselImages = useMemo(() => heroItems.slice(0, 5), [heroItems]);
   return (
     <div>
       <HomeDiv>
         <HomeHeading>
           <span>Recommended</span> to you
         </HomeHeading>
-        {loading && (
+        {heroLoading && (
           <>
             <Loading />
             <HomeSkeleton />
           </>
         )}
-        {!loading && <Carousel images={images} />}
-        {localStorage.getItem("Watching") && checkSize() && (
+        {!heroLoading && <Carousel images={carouselImages} />}
+        {hasWatching && (
           <div>
             <HeadingWrapper>
               <Heading>
@@ -90,7 +71,24 @@ function Home() {
             </Heading>
             <Links to="/trending/1">View All</Links>
           </HeadingWrapper>
-          <AnimeCards count={width <= 600 ? 7 : 15} criteria="airing" />
+          <AnimeCards
+            count={width <= 600 ? 7 : 15}
+            criteria="trending"
+            fallbackKey="trending"
+          />
+        </div>
+        <div>
+          <HeadingWrapper>
+            <Heading>
+              <span>Top</span> Airing
+            </Heading>
+            <Links to="/airing/1">View All</Links>
+          </HeadingWrapper>
+          <AnimeCards
+            count={width <= 600 ? 7 : 15}
+            criteria="airing"
+            fallbackKey="trending"
+          />
         </div>
         <div>
           <HeadingWrapper>
@@ -99,7 +97,11 @@ function Home() {
             </Heading>
             <Links to="/popular/1">View All</Links>
           </HeadingWrapper>
-          <AnimeCards count={width <= 600 ? 7 : 15} criteria="bypopularity" />
+          <AnimeCards
+            count={width <= 600 ? 7 : 15}
+            criteria="bypopularity"
+            fallbackKey="popular"
+          />
         </div>
         <div>
           <HeadingWrapper>
@@ -108,7 +110,11 @@ function Home() {
             </Heading>
             <Links to="/top100/1">View All</Links>
           </HeadingWrapper>
-          <AnimeCards count={width <= 600 ? 7 : 15} criteria="all" />
+          <AnimeCards
+            count={width <= 600 ? 7 : 15}
+            criteria="all"
+            fallbackKey="top100"
+          />
         </div>
         <div>
           <HeadingWrapper>
@@ -117,7 +123,11 @@ function Home() {
             </Heading>
             <Links to="/favourites/1">View All</Links>
           </HeadingWrapper>
-          <AnimeCards count={width <= 600 ? 7 : 15} criteria="favorite" />
+          <AnimeCards
+            count={width <= 600 ? 7 : 15}
+            criteria="favourite"
+            fallbackKey="favourite"
+          />
         </div>
         <div>
           <HeadingWrapper>
@@ -126,7 +136,11 @@ function Home() {
             </Heading>
             <Links to="/movies">View All</Links>
           </HeadingWrapper>
-          <AnimeCards count={width <= 600 ? 7 : 15} criteria="movie" />
+          <AnimeCards
+            count={width <= 600 ? 7 : 15}
+            criteria="movie"
+            fallbackKey="movie"
+          />
         </div>
       </HomeDiv>
     </div>

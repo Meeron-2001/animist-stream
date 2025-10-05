@@ -1,26 +1,22 @@
-import { api } from "../lib/api";
-import React, { useEffect, useState, useCallback } from "react";
+import React from "react";
 import { Link } from "react-router-dom";
 import styled from "styled-components";
 import SearchResultsSkeleton from "../components/skeletons/SearchResultsSkeleton";
 import Loading from "../components/Loading/Loading";
+import { useMalApi } from "../hooks/useMalApi";
 
 function PopularMovies() {
-  const [animeDetails, setAnimeDetails] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { items, loading } = useMalApi({
+    criteria: "movie",
+    page: 1,
+    perPage: 100,
+    fallbackKey: "movie",
+  });
 
-  const getAnime = useCallback(async () => {
-    window.scrollTo(0, 0);
-    let res = await api.get(`/api/getmalinfo?criteria=movie&count=100`);
-
-    setLoading(false);
-    setAnimeDetails(res.data.data);
+  React.useEffect(() => {
     document.title = "Popular Movies - Animist";
+    window.scrollTo(0, 0);
   }, []);
-
-  useEffect(() => {
-    getAnime();
-  }, [getAnime]);
 
   return (
     <div>
@@ -36,10 +32,13 @@ function PopularMovies() {
             <span>Popular Movie</span> Results
           </Heading>
           <CardWrapper>
-            {animeDetails.map((item, i) => (
-              <Links to={"/id/" + item.node.id}>
-                <img src={item.node.main_picture.large} alt="" />
-                <p>{item.node.title}</p>
+            {items.map((item) => (
+              <Links key={item.id} to={`/id/${item.id}`}>
+                <img
+                  src={item.coverImage.large}
+                  alt={item.title.english || item.title.userPreferred || "Anime Poster"}
+                />
+                <p>{item.title.english || item.title.userPreferred || "Unknown Title"}</p>
               </Links>
             ))}
           </CardWrapper>

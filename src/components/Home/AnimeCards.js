@@ -1,41 +1,22 @@
-import { api } from "../../lib/api";
-import React, { useEffect, useState, useCallback } from "react";
+import React from "react";
 import { Link } from "react-router-dom";
 import styled from "styled-components";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Scrollbar } from "swiper";
 import AnimeCardsSkeleton from "../../components/skeletons/AnimeCardsSkeleton";
 import Loading from "../Loading/Loading";
+import { useMalApi } from "../../hooks/useMalApi";
 
 import "swiper/css";
 import "swiper/css/scrollbar";
 
-function AnimeCards(props) {
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  const getData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await api.get(
-        `/api/getmalinfo?criteria=${props.criteria}&count=${props.count}`
-      );
-      if (Array.isArray(res?.data?.data)) {
-        setData(res.data.data);
-      } else {
-        setData([]);
-      }
-    } catch (err) {
-      console.error(err);
-      setData([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [props.criteria, props.count]);
-
-  useEffect(() => {
-    getData();
-  }, [getData]);
+function AnimeCards({ criteria, count = 15, fallbackKey }) {
+  const { items, loading } = useMalApi({
+    criteria,
+    page: 1,
+    perPage: count,
+    fallbackKey,
+  });
   return (
     <div>
       {loading && (
@@ -76,16 +57,19 @@ function AnimeCards(props) {
           modules={[Scrollbar]}
           className="mySwiper"
         >
-          {data.map((item, i) => (
-            <SwiperSlide key={item?.node?.id || i}>
+          {items.map((item) => (
+            <SwiperSlide key={item.id}>
               <Wrapper>
-                <Link to={`/id/${item?.node?.id}`}>
+                <Link to={`/id/${item.id}`}>
                   <img
-                    src={item?.node?.main_picture?.large || item?.node?.main_picture?.medium || "https://i.ibb.co/rv061Rg/showcase.png"}
-                    alt={item?.node?.title || "Anime poster"}
+                    src={item.coverImage.extraLarge || item.coverImage.large}
+                    alt={item.title.userPreferred || item.title.english || "Anime"}
+                    onError={(e) => {
+                      e.currentTarget.src = "https://i.ibb.co/rv061Rg/showcase.png";
+                    }}
                   />
                 </Link>
-                <p>{item?.node?.title || "Unknown Title"}</p>
+                <p>{item.title.english || item.title.userPreferred || "Unknown Title"}</p>
               </Wrapper>
             </SwiperSlide>
           ))}

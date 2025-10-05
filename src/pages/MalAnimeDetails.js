@@ -1,5 +1,4 @@
 import axios from "axios";
-import { api } from "../lib/api";
 import React, { useEffect, useState, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import styled from "styled-components";
@@ -14,9 +13,8 @@ function MalAnimeDetails() {
   const [loading, setLoading] = useState(true);
   const { width } = useWindowDimensions();
   const [anilistResponse, setAnilistResponse] = useState();
-  const [malResponse, setMalResponse] = useState();
+  const [episodeInfo, setEpisodeInfo] = useState([]);
   const [expanded, setExpanded] = useState(false);
-  const [dub, setDub] = useState(false);
   const [notAvailable, setNotAvailable] = useState(false);
 
   const getInfo = useCallback(async () => {
@@ -47,18 +45,12 @@ function MalAnimeDetails() {
       return;
     }
     setAnilistResponse(aniRes.data.data.Media);
-    const malRes = await api
-      .get(`/api/getidinfo?malId=${id}`)
-      .catch((err) => {
-        console.error(err);
-        return null;
-      });
-    if (!malRes || !malRes.data) {
-      setNotAvailable(true);
-      setLoading(false);
-      return;
-    }
-    setMalResponse(malRes.data);
+    const streamingList = Array.isArray(
+      aniRes.data?.data?.Media?.streamingEpisodes
+    )
+      ? aniRes.data.data.Media.streamingEpisodes
+      : [];
+    setEpisodeInfo(streamingList);
     setLoading(false);
     if (aniRes?.data?.data?.Media?.title?.userPreferred) {
       document.title = `${aniRes.data.data.Media.title.userPreferred} - Animist`;
@@ -103,15 +95,9 @@ function MalAnimeDetails() {
               <ContentWrapper>
                 <Poster>
                   <img src={anilistResponse.coverImage.extraLarge} alt="" />
-                  <Button to={`/play/${id}/${malResponse.subLink}/1`}>
-                    Watch Sub
-                  </Button>
-                  {malResponse.isDub && (
-                    <Button
-                      className="outline"
-                      to={`/play/${id}/${malResponse.dubLink}/1`}
-                    >
-                      Watch Dub
+                  {episodeInfo?.length > 0 && (
+                    <Button to={episodeInfo[0]?.url || "#"}>
+                      Watch Now
                     </Button>
                   )}
                 </Poster>
@@ -168,14 +154,10 @@ function MalAnimeDetails() {
                     <span>Status: </span>
                     {anilistResponse.status}
                   </p>
-                  <p>
-                    <span>Number of Sub Episodes: </span>
-                    {malResponse.subTotalEpisodes}
-                  </p>
-                  {malResponse.isDub && (
+                  {anilistResponse.episodes && (
                     <p>
-                      <span>Number of Dub Episodes: </span>
-                      {malResponse.dubTotalEpisodes}
+                      <span>Total Episodes: </span>
+                      {anilistResponse.episodes}
                     </p>
                   )}
                 </div>
@@ -183,62 +165,20 @@ function MalAnimeDetails() {
               <Episode>
                 <DubContainer>
                   <h2>Episodes</h2>
-                  {malResponse.isDub && (
-                    <div class="switch">
-                      <label for="switch">
-                        <input
-                          type="checkbox"
-                          id="switch"
-                          onChange={(e) => setDub(!dub)}
-                        ></input>
-                        <span class="indicator"></span>
-                        <span class="label">{dub ? "Dub" : "Sub"}</span>
-                      </label>
-                    </div>
-                  )}
+                  {episodeInfo?.length === 0 && <p>No streaming episodes available.</p>}
                 </DubContainer>
-                {width > 600 && (
+                {episodeInfo?.length > 0 && (
                   <Episodes>
-                    {malResponse.isDub &&
-                      dub &&
-                      [...Array(malResponse.dubTotalEpisodes)].map((x, i) => (
-                        <EpisodeLink
-                          to={`/play/${id}/${malResponse.dubLink}/${parseInt(i) + 1}`}
-                        >
-                          Episode {i + 1}
-                        </EpisodeLink>
-                      ))}
-
-                    {!dub &&
-                      [...Array(malResponse.subTotalEpisodes)].map((x, i) => (
-                        <EpisodeLink
-                          to={`/play/${id}/${malResponse.subLink}/${parseInt(i) + 1}`}
-                        >
-                          Episode {i + 1}
-                        </EpisodeLink>
-                      ))}
-                  </Episodes>
-                )}
-                {width <= 600 && (
-                  <Episodes>
-                    {malResponse.isDub &&
-                      dub &&
-                      [...Array(malResponse.dubTotalEpisodes)].map((x, i) => (
-                        <EpisodeLink
-                          to={`/play/${id}/${malResponse.dubLink}/${parseInt(i) + 1}`}
-                        >
-                          {i + 1}
-                        </EpisodeLink>
-                      ))}
-
-                    {!dub &&
-                      [...Array(malResponse.subTotalEpisodes)].map((x, i) => (
-                        <EpisodeLink
-                          to={`/play/${id}/${malResponse.subLink}/${parseInt(i) + 1}`}
-                        >
-                          {i + 1}
-                        </EpisodeLink>
-                      ))}
+                    {episodeInfo.map((episode, index) => (
+                      <EpisodeLink
+                        key={episode?.id || index}
+                        to={episode?.url || "#"}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        Episode {episode?.title || index + 1}
+                      </EpisodeLink>
+                    ))}
                   </Episodes>
                 )}
               </Episode>

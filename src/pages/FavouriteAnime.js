@@ -1,44 +1,23 @@
-import axios from "axios";
-import React, { useEffect, useState, useCallback } from "react";
+import React from "react";
 import { Link, useParams } from "react-router-dom";
 import styled from "styled-components";
 import SearchResultsSkeleton from "../components/skeletons/SearchResultsSkeleton";
 import Loading from "../components/Loading/Loading";
-import { favouritesAnimeQuery } from "../hooks/searchQueryStrings";
+import { useMalApi } from "../hooks/useMalApi";
 
 function FavouriteAnime() {
-  let page = useParams().page;
-  const [animeDetails, setAnimeDetails] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { page = "1" } = useParams();
+  const { items, loading } = useMalApi({
+    criteria: "favourite",
+    page: Number(page) || 1,
+    perPage: 50,
+    fallbackKey: "favourite",
+  });
 
-  const getAnime = useCallback(async () => {
-    setLoading(true);
-    window.scrollTo(0, 0);
-    const res = await axios({
-      url: process.env.REACT_APP_BASE_URL,
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      data: {
-        query: favouritesAnimeQuery,
-        variables: {
-          page: page,
-          perPage: 50,
-        },
-      },
-    }).catch((err) => {
-      console.error(err);
-    });
-    setLoading(false);
-    setAnimeDetails(res.data.data.Page.media);
+  React.useEffect(() => {
     document.title = "Favorite Anime - Animist";
+    window.scrollTo(0, 0);
   }, [page]);
-
-  useEffect(() => {
-    getAnime();
-  }, [getAnime]);
   return (
     <div>
       {loading && (
@@ -53,24 +32,23 @@ function FavouriteAnime() {
             <span>Favourite Anime</span> Results
           </Heading>
           <CardWrapper>
-            {animeDetails.map((item, i) => (
-              <Links to={"/id/" + item.idMal}>
-                <img src={item.coverImage.large} alt="" />
-                <p>
-                  {item.title.english !== null
-                    ? item.title.english
-                    : item.title.userPreferred}
-                </p>
+            {items.map((item) => (
+              <Links key={item.id} to={`/id/${item.id}`}>
+                <img
+                  src={item.coverImage.large}
+                  alt={item.title.english || item.title.userPreferred || "Anime Poster"}
+                />
+                <p>{item.title.english || item.title.userPreferred || "Unknown Title"}</p>
               </Links>
             ))}
           </CardWrapper>
           <NavButtons>
-            {page > 1 && (
-              <NavButton to={"/favourites/" + (parseInt(page) - 1)}>
+            {Number(page) > 1 && (
+              <NavButton to={`/favourites/${Number(page) - 1}`}>
                 Previous
               </NavButton>
             )}
-            <NavButton to={"/favourites/" + (parseInt(page) + 1)}>
+            <NavButton to={`/favourites/${Number(page) + 1}`}>
               Next
             </NavButton>
           </NavButtons>
