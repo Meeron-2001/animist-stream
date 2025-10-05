@@ -188,7 +188,7 @@ function WatchAnimeV2() {
       setEpisodeLinks({
         sources: streamUrl,
         type: isHls ? "hls" : "mp4",
-        downloadLink: watchData?.download || externalUrl || "",
+        downloadLink: watchData?.download || streamUrl || "",
         totalEpisodes: activeEpisodes.length,
         episodeNum: currentEpisodeNumber,
         isDub: useDub,
