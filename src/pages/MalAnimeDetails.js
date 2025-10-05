@@ -1,11 +1,12 @@
 import axios from "axios";
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
 import styled from "styled-components";
 import AnimeDetailsSkeleton from "../components/skeletons/AnimeDetailsSkeleton";
 import useWindowDimensions from "../hooks/useWindowDimensions";
 import { searchByIdQuery } from "../hooks/searchQueryStrings";
 import Loading from "../components/Loading/Loading";
+import { fetchMetaInfo } from "../services/anilistMeta";
 
 function MalAnimeDetails() {
   let id = useParams().id;
@@ -13,7 +14,8 @@ function MalAnimeDetails() {
   const [loading, setLoading] = useState(true);
   const { width } = useWindowDimensions();
   const [anilistResponse, setAnilistResponse] = useState();
-  const [episodeInfo, setEpisodeInfo] = useState([]);
+  const [playbackData, setPlaybackData] = useState(null);
+  const [selectedType, setSelectedType] = useState("sub");
   const [expanded, setExpanded] = useState(false);
   const [notAvailable, setNotAvailable] = useState(false);
 
@@ -44,13 +46,45 @@ function MalAnimeDetails() {
       setLoading(false);
       return;
     }
-    setAnilistResponse(aniRes.data.data.Media);
-    const streamingList = Array.isArray(
-      aniRes.data?.data?.Media?.streamingEpisodes
-    )
-      ? aniRes.data.data.Media.streamingEpisodes
-      : [];
-    setEpisodeInfo(streamingList);
+    const media = aniRes.data.data.Media;
+    setAnilistResponse(media);
+
+    const meta = await fetchMetaInfo(media.id);
+
+    const normalizeEpisodes = (episodes = []) => {
+      if (!Array.isArray(episodes)) return [];
+      return [...episodes].sort((a, b) => {
+        const getNum = (ep) =>
+          Number(ep?.number ?? ep?.episode ?? ep?.title?.match(/\d+/)?.[0] ?? 0);
+        return getNum(a) - getNum(b);
+      });
+    };
+
+    const subEpisodes = normalizeEpisodes(meta?.episodes);
+    const dubEpisodes = normalizeEpisodes(meta?.episodesDub);
+    const hasSub = subEpisodes.length > 0;
+    const hasDub = dubEpisodes.length > 0;
+
+    const deriveBaseSlug = (episodes = []) => {
+      const firstId = episodes?.[0]?.id;
+      if (!firstId || typeof firstId !== "string") return null;
+      const splitIndex = firstId.indexOf("-episode-");
+      if (splitIndex === -1) return firstId;
+      return firstId.substring(0, splitIndex);
+    };
+
+    const subSlug = deriveBaseSlug(subEpisodes);
+    const dubSlug = deriveBaseSlug(dubEpisodes);
+
+    setPlaybackData({
+      hasSub,
+      hasDub,
+      subEpisodes,
+      dubEpisodes,
+      subSlug,
+      dubSlug,
+    });
+    setSelectedType(hasSub ? "sub" : hasDub ? "dub" : "sub");
     setLoading(false);
     if (aniRes?.data?.data?.Media?.title?.userPreferred) {
       document.title = `${aniRes.data.data.Media.title.userPreferred} - Animist`;

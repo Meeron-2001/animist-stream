@@ -23,6 +23,7 @@ export let searchAnimeQuery = `
 export let searchByIdQuery = `
 	query($id: Int) {
 		Media(idMal: $id, type: ANIME){
+			id
 			title {
 				romaji
 				english
@@ -44,10 +45,16 @@ export let searchByIdQuery = `
 				day
 			}
 			averageScore
+			episodes
 			bannerImage
 			coverImage {
 				extraLarge
 				large
+			}
+			streamingEpisodes {
+				title
+				url
+				site
 			}
 		}
 	}

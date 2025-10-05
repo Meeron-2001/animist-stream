@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
 import axios from "axios";
-import { api } from "../lib/api";
 import { useParams, Link } from "react-router-dom";
 import styled from "styled-components";
 import { BiArrowToBottom, BiFullscreen } from "react-icons/bi";
@@ -16,13 +15,15 @@ import VideoPlayer from "../components/VideoPlayer/VideoPlayer";
 import { searchByIdQuery } from "../hooks/searchQueryStrings";
 import toast from "react-hot-toast";
 import Loading from "../components/Loading/Loading";
+import { fetchMetaInfo, fetchEpisodeSources } from "../services/anilistMeta";
 
 function WatchAnimeV2() {
   const mal_id = useParams().id;
   const slug = useParams().slug;
   const episode = useParams().episode;
 
-  const [episodeLinks, setEpisodeLinks] = useState([]);
+  const [episodeLinks, setEpisodeLinks] = useState(null);
+  const [episodeCatalog, setEpisodeCatalog] = useState([]);
   const [currentServer, setCurrentServer] = useState("");
   const [animeDetails, setAnimeDetails] = useState();
   const [loading, setLoading] = useState(true);
@@ -30,44 +31,165 @@ function WatchAnimeV2() {
   const [fullScreen, setFullScreen] = useState(false);
   const [internalPlayer, setInternalPlayer] = useState(true);
 
+  const resolveEpisodeNumber = useCallback((item) => {
+    if (!item) return null;
+    const direct = item.number ?? item.episode;
+    if (direct !== undefined && direct !== null) return Number(direct);
+    const match = typeof item.title === "string" ? item.title.match(/\d+/) : null;
+    return match ? Number(match[0]) : null;
+  }, []);
+
+  const normalizeEpisodes = useCallback(
+    (episodes = []) => {
+      if (!Array.isArray(episodes)) return [];
+      return [...episodes].sort((a, b) => {
+        const aNum = resolveEpisodeNumber(a) ?? 0;
+        const bNum = resolveEpisodeNumber(b) ?? 0;
+        return aNum - bNum;
+      });
+    },
+    [resolveEpisodeNumber]
+  );
+
+  const deriveBaseSlug = useCallback((episodes = []) => {
+    const firstId = episodes?.[0]?.id;
+    if (!firstId || typeof firstId !== "string") return null;
+    const splitIndex = firstId.indexOf("-episode-");
+    if (splitIndex === -1) return firstId;
+    return firstId.substring(0, splitIndex);
+  }, []);
+
   const getEpisodeLinks = useCallback(async () => {
     setLoading(true);
     window.scrollTo(0, 0);
-    let res = await api.get(
-      `/api/getmixlinks?id=${slug}&ep=${episode}`
-    );
-    setEpisodeLinks(res.data);
-    setCurrentServer(res.data.gogoLink);
-    if (!res.data.sources) {
-      setInternalPlayer(true);
-    }
-    updateLocalStorage(
-      res.data.animeId,
-      res.data.episodeNum,
-      mal_id,
-      res.data.isDub
-    );
-    let aniRes = await axios({
-      url: process.env.REACT_APP_BASE_URL,
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      data: {
-        query: searchByIdQuery,
-        variables: {
-          id: mal_id,
+
+    try {
+      const aniRes = await axios({
+        url: process.env.REACT_APP_BASE_URL,
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
         },
-      },
-    }).catch((err) => {
-      console.error(err);
-    });
-    setAnimeDetails(aniRes.data.data.Media);
-    document.title = `${aniRes.data.data.Media.title.userPreferred} ${res.data.isDub ? "(Dub)" : "(Sub)"
-      } EP-${episode} - Animist`;
-    setLoading(false);
-  }, [slug, episode, mal_id]);
+        data: {
+          query: searchByIdQuery,
+          variables: {
+            id: mal_id,
+          },
+        },
+      }).catch((err) => {
+        console.error(err);
+        return null;
+      });
+
+      if (!aniRes || !aniRes.data?.data?.Media) {
+        toast.error("Failed to load anime details.");
+        setEpisodeLinks(null);
+        setEpisodeCatalog([]);
+        setCurrentServer("");
+        setLoading(false);
+        return;
+      }
+
+      const media = aniRes.data.data.Media;
+      setAnimeDetails(media);
+
+      const meta = await fetchMetaInfo(media.id);
+
+      if (!meta) {
+        toast.error("No streaming information available at the moment.");
+        setEpisodeLinks(null);
+        setEpisodeCatalog([]);
+        setCurrentServer("");
+        setLoading(false);
+        return;
+      }
+
+      const subEpisodes = normalizeEpisodes(meta.episodes);
+      const dubEpisodes = normalizeEpisodes(meta.episodesDub);
+      const subSlug = deriveBaseSlug(subEpisodes);
+      const dubSlug = deriveBaseSlug(dubEpisodes);
+
+      const prefersDub = !!dubSlug && slug === dubSlug;
+      const hasSub = subEpisodes.length > 0 && subSlug;
+      const hasDub = dubEpisodes.length > 0 && dubSlug;
+
+      const useDub = prefersDub && hasDub;
+      const activeEpisodes = useDub
+        ? dubEpisodes
+        : hasSub
+        ? subEpisodes
+        : dubEpisodes;
+      const activeSlug = useDub
+        ? dubSlug
+        : hasSub
+        ? subSlug
+        : dubSlug || slug;
+
+      if (!activeEpisodes.length || !activeSlug) {
+        toast.error("No streaming episodes found for this title.");
+        setEpisodeLinks(null);
+        setEpisodeCatalog([]);
+        setCurrentServer("");
+        setLoading(false);
+        return;
+      }
+
+      const requestedEpisodeNumber = Number(episode) || 1;
+      let currentEpisode = activeEpisodes.find(
+        (item) => resolveEpisodeNumber(item) === requestedEpisodeNumber
+      );
+      if (!currentEpisode) {
+        currentEpisode = activeEpisodes[0];
+      }
+
+      const watchData = await fetchEpisodeSources(currentEpisode.id);
+      const bestSource = watchData?.sources?.find((src) => src?.quality === "default") ||
+        watchData?.sources?.find((src) => src?.isM3U8) ||
+        watchData?.sources?.[0];
+
+      const streamUrl = bestSource?.url || currentEpisode.url || "";
+      const isHls = Boolean(bestSource?.isM3U8 || streamUrl.includes(".m3u8"));
+      setInternalPlayer(Boolean(streamUrl) && isHls);
+
+      const externalUrl = currentEpisode.url || streamUrl;
+      setCurrentServer(externalUrl || "");
+
+      const formattedEpisodes = activeEpisodes.map((item) => ({
+        id: item.id,
+        number: resolveEpisodeNumber(item) || 1,
+      }));
+
+      const currentEpisodeNumber = resolveEpisodeNumber(currentEpisode) || 1;
+
+      setEpisodeCatalog(formattedEpisodes);
+      setEpisodeLinks({
+        sources: streamUrl,
+        type: isHls ? "hls" : "mp4",
+        downloadLink: watchData?.download || externalUrl || "",
+        totalEpisodes: activeEpisodes.length,
+        episodeNum: currentEpisodeNumber,
+        isDub: useDub,
+        animeId: activeSlug,
+        episodesList: formattedEpisodes,
+      });
+
+      updateLocalStorage(activeSlug, currentEpisodeNumber, mal_id, useDub);
+
+      const episodeLabel = `${media.title.userPreferred} ${
+        useDub ? "(Dub)" : "(Sub)"
+      } EP-${currentEpisodeNumber}`;
+      document.title = `${episodeLabel} - Animist`;
+      setLoading(false);
+    } catch (error) {
+      console.error(error);
+      toast.error("Unable to load episode sources.");
+      setEpisodeLinks(null);
+      setEpisodeCatalog([]);
+      setCurrentServer("");
+      setLoading(false);
+    }
+  }, [mal_id, slug, episode, deriveBaseSlug, normalizeEpisodes, resolveEpisodeNumber]);
 
   useEffect(() => {
     getEpisodeLinks();
