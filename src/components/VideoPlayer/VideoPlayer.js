@@ -82,12 +82,13 @@ function VideoPlayer({
           ],
     };
 
+    // If explicitly mp4, initialize MP4 and return early
     if (type === "mp4") {
       video.removeAttribute("crossorigin");
       const player = new plyr(video, defaultOptions);
       player.source = {
         type: "video",
-        title: "Example title",
+        title: title || "Episode",
         poster: banner,
         sources: [
           {
@@ -96,8 +97,13 @@ function VideoPlayer({
           },
         ],
       };
+      setPlayer(player);
+      return;
     }
-    if (Hls.isSupported()) {
+
+    const isHls = typeof src === "string" && src.includes(".m3u8");
+
+    if (isHls && Hls.isSupported()) {
       const hls = new Hls();
       hls.loadSource(src);
       hls.attachMedia(video);
@@ -122,7 +128,7 @@ function VideoPlayer({
           }
         });
         let player = new plyr(video, defaultOptions);
-        setPlayer(new plyr(video, defaultOptions));
+        setPlayer(player);
         let plyer;
         var button = document.createElement("button");
         button.classList.add("skip-button");
@@ -219,7 +225,7 @@ function VideoPlayer({
           });
         }
       }
-    } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+    } else if (isHls && video.canPlayType("application/vnd.apple.mpegurl")) {
       video.src = src;
       const defaultOptions = {
         captions: { active: true, update: true, language: "en" },
@@ -238,7 +244,7 @@ function VideoPlayer({
         ],
       };
       let player = new plyr(video, defaultOptions);
-      setPlayer(new plyr(video, defaultOptions));
+      setPlayer(player);
       let plyer;
       var button = document.createElement("button");
       button.classList.add("skip-button");
@@ -285,10 +291,13 @@ function VideoPlayer({
         localStorage.setItem(title, Math.round(player.currentTime));
       });
     } else {
+      // Fallback to MP4 init if not HLS-capable
+      video.removeAttribute("crossorigin");
       const player = new plyr(video, defaultOptions);
       player.source = {
         type: "video",
-        title: "Example title",
+        title: title || "Episode",
+        poster: banner,
         sources: [
           {
             src: src,
@@ -296,6 +305,7 @@ function VideoPlayer({
           },
         ],
       };
+      setPlayer(player);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

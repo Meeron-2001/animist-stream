@@ -55,19 +55,25 @@ function MalAnimeDetails() {
 
     const normalizeEpisodes = (episodes = []) => {
       if (!Array.isArray(episodes)) return [];
-      return [...episodes].sort((a, b) => {
-        const getNum = (ep) => {
-          if (ep?.number !== undefined && ep?.number !== null) {
-            return Number(ep.number);
-          }
-          if (ep?.episode !== undefined && ep?.episode !== null) {
-            return Number(ep.episode);
-          }
-          const match = typeof ep.title === "string" ? ep.title.match(/\d+/) : null;
-          return match ? Number(match[0]) : null;
-        };
-        return getNum(a) - getNum(b);
-      });
+      const extractNum = (ep, idx) => {
+        if (ep?.number !== undefined && ep?.number !== null) return Number(ep.number);
+        if (ep?.episode !== undefined && ep?.episode !== null) return Number(ep.episode);
+        if (typeof ep?.id === "string") {
+          const m = ep.id.match(/-episode-(\d+)/i) || ep.id.match(/(\d+)(?!.*\d)/);
+          if (m && m[1]) return Number(m[1]);
+        }
+        if (typeof ep?.title === "string") {
+          const t = ep.title.match(/\d+/);
+          if (t && t[0]) return Number(t[0]);
+        }
+        return idx + 1; // stable fallback
+      };
+      return episodes
+        .map((ep, idx) => ({ ...ep, __num: extractNum(ep, idx), __idx: idx }))
+        .sort((a, b) => {
+          if (a.__num !== b.__num) return a.__num - b.__num;
+          return a.__idx - b.__idx;
+        });
     };
 
     // Try primary provider first, then fallback to an alternate provider if empty
@@ -85,24 +91,6 @@ function MalAnimeDetails() {
 
     let subEpisodes = normalizeEpisodes(metaData?.episodes);
     let dubEpisodes = normalizeEpisodes(metaData?.episodesDub);
-
-    // Final fallback: use AniList's streamingEpisodes as external links
-    if (
-      subEpisodes.length === 0 &&
-      dubEpisodes.length === 0 &&
-      Array.isArray(media.streamingEpisodes) &&
-      media.streamingEpisodes.length > 0
-    ) {
-      console.log("[Meta] Falling back to AniList.streamingEpisodes external links");
-      subEpisodes = media.streamingEpisodes.map((ep, i) => {
-        const match = typeof ep.title === "string" ? ep.title.match(/\d+/) : null;
-        return {
-          title: ep.title || `Episode ${i + 1}`,
-          url: ep.url,
-          number: match ? Number(match[0]) : i + 1,
-        };
-      });
-    }
     const hasSub = subEpisodes.length > 0;
     const hasDub = dubEpisodes.length > 0;
 
@@ -148,11 +136,12 @@ function MalAnimeDetails() {
 
   const getEpisodeNumber = useCallback((episode) => {
     if (!episode) return null;
-    if (episode.number !== undefined && episode.number !== null) {
-      return Number(episode.number);
-    }
-    if (episode.episode !== undefined && episode.episode !== null) {
-      return Number(episode.episode);
+    if (episode.number !== undefined && episode.number !== null) return Number(episode.number);
+    if (episode.episode !== undefined && episode.episode !== null) return Number(episode.episode);
+    if (typeof episode.__num === "number") return episode.__num;
+    if (typeof episode.id === "string") {
+      const m = episode.id.match(/-episode-(\d+)/i) || episode.id.match(/(\d+)(?!.*\d)/);
+      if (m && m[1]) return Number(m[1]);
     }
     const match = typeof episode.title === "string" ? episode.title.match(/\d+/) : null;
     return match ? Number(match[0]) : null;
@@ -182,9 +171,7 @@ function MalAnimeDetails() {
     ? `/play/${id}/${activeSlug}/${firstEpisodeNumber}`
     : null;
 
-  const fallbackExternal = !watchLink && activeEpisodes.length
-    ? activeEpisodes[0]?.url || null
-    : null;
+  const fallbackExternal = null; // Do not redirect to external sites; internal player only
 
   const hasEpisodes = activeEpisodes.length > 0;
   const showToggle = Boolean(playbackData?.hasSub && playbackData?.hasDub);

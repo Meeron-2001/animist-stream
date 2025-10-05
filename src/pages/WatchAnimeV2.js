@@ -94,7 +94,21 @@ function WatchAnimeV2() {
       const media = aniRes.data.data.Media;
       setAnimeDetails(media);
 
-      const meta = await fetchMetaInfo(media.id);
+      // Try gogoanime first, then fallback to zoro if needed
+      let providerUsed = "gogoanime";
+      let meta = await fetchMetaInfo(media.id, { provider: providerUsed });
+
+      const noEpisodes = (m) => !m || ((!(Array.isArray(m?.episodes)) || m.episodes.length === 0) &&
+        (!(Array.isArray(m?.episodesDub)) || m.episodesDub.length === 0));
+
+      if (noEpisodes(meta)) {
+        const fallbackProvider = "zoro";
+        const fallbackMeta = await fetchMetaInfo(media.id, { provider: fallbackProvider });
+        if (!noEpisodes(fallbackMeta)) {
+          meta = fallbackMeta;
+          providerUsed = fallbackProvider;
+        }
+      }
 
       if (!meta) {
         toast.error("No streaming information available at the moment.");
@@ -143,17 +157,25 @@ function WatchAnimeV2() {
         currentEpisode = activeEpisodes[0];
       }
 
-      const watchData = await fetchEpisodeSources(currentEpisode.id);
+      const watchData = await fetchEpisodeSources(currentEpisode.id, { provider: providerUsed });
       const bestSource = watchData?.sources?.find((src) => src?.quality === "default") ||
         watchData?.sources?.find((src) => src?.isM3U8) ||
         watchData?.sources?.[0];
 
-      const streamUrl = bestSource?.url || currentEpisode.url || "";
+      const streamUrl = bestSource?.url || "";
+      if (!streamUrl) {
+        toast.error("No playable source found for this episode.");
+        setInternalPlayer(false);
+        setCurrentServer("");
+        setLoading(false);
+        return;
+      }
       const isHls = Boolean(bestSource?.isM3U8 || streamUrl.includes(".m3u8"));
-      setInternalPlayer(Boolean(streamUrl) && isHls);
+      // Use internal player for both HLS and MP4 if we have a direct stream URL
+      setInternalPlayer(Boolean(streamUrl));
 
-      const externalUrl = currentEpisode.url || streamUrl;
-      setCurrentServer(externalUrl || "");
+      // Only use the resolved stream URL for the player; avoid external site URLs
+      setCurrentServer(streamUrl || "");
 
       const formattedEpisodes = activeEpisodes.map((item) => ({
         id: item.id,
@@ -172,6 +194,7 @@ function WatchAnimeV2() {
         isDub: useDub,
         animeId: activeSlug,
         episodesList: formattedEpisodes,
+        provider: providerUsed,
       });
 
       updateLocalStorage(activeSlug, currentEpisodeNumber, mal_id, useDub);

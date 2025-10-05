@@ -2,8 +2,12 @@ import axios from "axios";
 
 const DEFAULT_META_BASE = "https://api.consumet.org/meta/anilist";
 
-const META_BASE_URL =
-  process.env.REACT_APP_META_BASE_URL?.replace(/\/$/, "") || DEFAULT_META_BASE;
+// Prefer the user's custom backend if provided, then env override, then public API
+const BACKEND_BASE = process.env.REACT_APP_BACKEND_URL?.replace(/\/$/, "");
+const META_ENV = process.env.REACT_APP_META_BASE_URL?.replace(/\/$/, "");
+const META_BASE_URL = (
+  BACKEND_BASE ? `${BACKEND_BASE}/meta/anilist` : (META_ENV || DEFAULT_META_BASE)
+).replace(/\/$/, "");
 
 const DEFAULT_PROVIDER = "gogoanime";
 
