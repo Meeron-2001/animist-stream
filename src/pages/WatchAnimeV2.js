@@ -30,6 +30,8 @@ function WatchAnimeV2() {
   const { width } = useWindowDimensions();
   const [fullScreen, setFullScreen] = useState(false);
   const [internalPlayer, setInternalPlayer] = useState(true);
+  const [providerChoice, setProviderChoice] = useState("gogoanime"); // user-preferred provider
+  const [activeProvider, setActiveProvider] = useState("gogoanime"); // actually used after fallback
 
   const resolveEpisodeNumber = useCallback((item) => {
     if (!item) return null;
@@ -74,7 +76,7 @@ function WatchAnimeV2() {
         data: {
           query: searchByIdQuery,
           variables: {
-            id: mal_id,
+            id: Number(mal_id),
           },
         },
       }).catch((err) => {
@@ -94,15 +96,15 @@ function WatchAnimeV2() {
       const media = aniRes.data.data.Media;
       setAnimeDetails(media);
 
-      // Try gogoanime first, then fallback to zoro if needed
-      let providerUsed = "gogoanime";
+      // Try user-selected provider first, then fallback
+      let providerUsed = providerChoice;
       let meta = await fetchMetaInfo(media.id, { provider: providerUsed });
 
       const noEpisodes = (m) => !m || ((!(Array.isArray(m?.episodes)) || m.episodes.length === 0) &&
         (!(Array.isArray(m?.episodesDub)) || m.episodesDub.length === 0));
 
       if (noEpisodes(meta)) {
-        const fallbackProvider = "zoro";
+        const fallbackProvider = providerUsed === "gogoanime" ? "zoro" : "gogoanime";
         const fallbackMeta = await fetchMetaInfo(media.id, { provider: fallbackProvider });
         if (!noEpisodes(fallbackMeta)) {
           meta = fallbackMeta;
@@ -149,20 +151,26 @@ function WatchAnimeV2() {
         return;
       }
 
-      const requestedEpisodeNumber = Number(episode) || 1;
-      let currentEpisode = activeEpisodes.find(
-        (item) => resolveEpisodeNumber(item) === requestedEpisodeNumber
-      );
-      if (!currentEpisode) {
-        currentEpisode = activeEpisodes[0];
-      }
+      // Index-based selection: episode param is a 1-based index
+      const requestedIndex = Math.max(1, parseInt(episode) || 1);
+      let currentEpisode = activeEpisodes[requestedIndex - 1] || activeEpisodes[0];
 
       const watchData = await fetchEpisodeSources(currentEpisode.id, { provider: providerUsed });
-      const bestSource = watchData?.sources?.find((src) => src?.quality === "default") ||
-        watchData?.sources?.find((src) => src?.isM3U8) ||
-        watchData?.sources?.[0];
+      const sourcesArr = Array.isArray(watchData?.sources) ? watchData.sources : [];
+      const bestSource =
+        sourcesArr.find((src) => src?.quality === "default" && (src?.url || src?.file)) ||
+        sourcesArr.find((src) => src?.isM3U8 && (src?.url || src?.file)) ||
+        sourcesArr.find((src) => (src?.url || src?.file)) ||
+        null;
 
-      const streamUrl = bestSource?.url || "";
+      let streamUrl = (bestSource?.url || bestSource?.file || "").toString();
+      // Download-link fallback when no direct sources provided
+      if (!streamUrl && typeof watchData?.download === "string") {
+        const dl = watchData.download;
+        if (dl.endsWith(".mp4") || dl.includes(".m3u8")) {
+          streamUrl = dl;
+        }
+      }
       if (!streamUrl) {
         toast.error("No playable source found for this episode.");
         setInternalPlayer(false);
@@ -177,12 +185,12 @@ function WatchAnimeV2() {
       // Only use the resolved stream URL for the player; avoid external site URLs
       setCurrentServer(streamUrl || "");
 
-      const formattedEpisodes = activeEpisodes.map((item) => ({
+      const formattedEpisodes = activeEpisodes.map((item, idx) => ({
         id: item.id,
-        number: resolveEpisodeNumber(item) || 1,
+        number: idx + 1, // index-based numbering for UI
       }));
 
-      const currentEpisodeNumber = resolveEpisodeNumber(currentEpisode) || 1;
+      const currentEpisodeNumber = requestedIndex;
 
       setEpisodeCatalog(formattedEpisodes);
       setEpisodeLinks({
@@ -203,6 +211,7 @@ function WatchAnimeV2() {
         useDub ? "(Dub)" : "(Sub)"
       } EP-${currentEpisodeNumber}`;
       document.title = `${episodeLabel} - Animist`;
+      setActiveProvider(providerUsed);
       setLoading(false);
     } catch (error) {
       console.error(error);
@@ -212,7 +221,7 @@ function WatchAnimeV2() {
       setCurrentServer("");
       setLoading(false);
     }
-  }, [mal_id, slug, episode, deriveBaseSlug, normalizeEpisodes, resolveEpisodeNumber]);
+  }, [mal_id, slug, episode, providerChoice, deriveBaseSlug, normalizeEpisodes, resolveEpisodeNumber]);
 
   useEffect(() => {
     getEpisodeLinks();
@@ -320,6 +329,19 @@ function WatchAnimeV2() {
                     </IconContext.Provider>
                   )}
                 </Titles>
+                <ProviderRow>
+                  <span>Source:</span>
+                  <ProviderSelect
+                    value={providerChoice}
+                    onChange={(e) => setProviderChoice(e.target.value)}
+                  >
+                    <option value="gogoanime">Gogoanime</option>
+                    <option value="zoro">Zoro</option>
+                  </ProviderSelect>
+                  <ActiveBadge title="Provider actually used after fallback">
+                    Using: {activeProvider}
+                  </ActiveBadge>
+                </ProviderRow>
                 <p
                   style={{
                     fontSize: "0.9rem",
@@ -770,3 +792,24 @@ const Titles = styled.div`
 `;
 
 export default WatchAnimeV2;
+
+const ProviderRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: white;
+  margin-bottom: 0.4rem;
+`;
+
+const ProviderSelect = styled.select`
+  background-color: #242235;
+  color: white;
+  border: 1px solid #393653;
+  border-radius: 0.3rem;
+  padding: 0.2rem 0.5rem;
+`;
+
+const ActiveBadge = styled.span`
+  font-size: 0.85rem;
+  opacity: 0.85;
+`;

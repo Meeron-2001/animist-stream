@@ -6,7 +6,7 @@ import AnimeDetailsSkeleton from "../components/skeletons/AnimeDetailsSkeleton";
 import useWindowDimensions from "../hooks/useWindowDimensions";
 import { searchByIdQuery } from "../hooks/searchQueryStrings";
 import Loading from "../components/Loading/Loading";
-import { fetchMetaInfo } from "../services/anilistMeta";
+import { fetchMetaInfo, fetchEpisodeSources } from "../services/anilistMeta";
 
 function MalAnimeDetails() {
   let id = useParams().id;
@@ -115,6 +115,15 @@ function MalAnimeDetails() {
     });
     setSelectedType(hasSub ? "sub" : hasDub ? "dub" : "sub");
     setLoading(false);
+
+    // Prefetch first episode's sources to warm up provider/watch endpoint
+    try {
+      const firstEp = hasSub ? subEpisodes[0] : hasDub ? dubEpisodes[0] : null;
+      if (firstEp?.id) {
+        // fire and forget; service handles provider/server/public fallbacks
+        fetchEpisodeSources(firstEp.id).catch(() => {});
+      }
+    } catch (_) {}
     if (aniRes?.data?.data?.Media?.title?.userPreferred) {
       document.title = `${aniRes.data.data.Media.title.userPreferred} - Animist`;
     }
@@ -315,32 +324,23 @@ function MalAnimeDetails() {
                 </DubContainer>
                 {hasEpisodes && (
                   <Episodes>
-                    {activeEpisodes.map((episode, index) => {
-                      const episodeNumber = getEpisodeNumber(episode) || index + 1;
-                      const key = episode?.id || `${selectedType}-${episodeNumber}`;
+                    {activeEpisodes.map((ep, index) => {
+                      const displayNum = index + 1;
+                      const key = ep?.id || `${selectedType}-${displayNum}`;
 
                       if (canPlayInternally) {
                         return (
                           <EpisodeLink
                             key={key}
-                            to={`/play/${id}/${activeSlug}/${episodeNumber}`}
+                            to={`/play/${id}/${activeSlug}/${displayNum}`}
                           >
-                            Episode {episodeNumber}
+                            Episode {displayNum}
                           </EpisodeLink>
                         );
                       }
 
-                      const externalHref = episode?.url || "#";
-                      return (
-                        <EpisodeExternal
-                          key={key}
-                          href={externalHref}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          Episode {episodeNumber}
-                        </EpisodeExternal>
-                      );
+                      // No internal playback available; skip external for stricter UX
+                      return null;
                     })}
                   </Episodes>
                 )}
